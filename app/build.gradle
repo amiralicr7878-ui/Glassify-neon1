@@ -2,10 +2,10 @@ plugins {
     id 'com.android.application'
 }
 android {
-    namespace 'com.amiralicr7878.glassifyneon'
+    namespace 'com.amiralicr7878.glassifyneon1'
     compileSdk 35
     defaultConfig {
-        applicationId 'com.amiralicr7878.glassifyneon'
+        applicationId 'com.amiralicr7878.glassifyneon1'
         minSdk 23
         targetSdk 35
         versionCode 1
