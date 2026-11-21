@@ -1,0 +1,3904 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Liquid Glass Music Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-1: #00f0ff;
+            --neon-2: #b537f2;
+            --neon-3: #ff2e93;
+            --track-color-1: #00f0ff;
+            --track-color-2: #b537f2;
+            --ios-ease: cubic-bezier(0.22, 1, 0.36, 1);
+            --ios-spring: cubic-bezier(0.32, 0.72, 0, 1);
+            --glass-bg-start: rgba(32, 40, 68, 0.78);
+            --glass-bg-end: rgba(16, 21, 38, 0.86);
+            --glass-btn-start: rgba(44, 54, 88, 0.82);
+            --glass-btn-end: rgba(22, 28, 50, 0.88);
+            --glass-border: rgba(255, 255, 255, 0.16);
+            --glass-highlight: rgba(255, 255, 255, 0.24);
+            --glass-blur: 14px;
+            --glass-saturate: 135%;
+            --glass-shadow: 0 10px 26px rgba(0, 0, 0, 0.42);
+            --settings-surface-start: rgba(28, 36, 62, 0.90);
+            --settings-surface-end: rgba(14, 19, 34, 0.94);
+            --settings-surface-border: rgba(255, 255, 255, 0.16);
+            --settings-surface-highlight: rgba(255, 255, 255, 0.20);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #070a14;
+            color: #ffffff;
+            font-family: 'Vazirmatn', 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        .app-shell {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            margin: 0 auto;
+            overflow: hidden;
+            background: #070a14;
+        }
+
+        .home-bg-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0;
+            transform: scale3d(1.03, 1.03, 1);
+            transition: opacity 0.55s var(--ios-ease), transform 0.55s var(--ios-ease), filter 0.55s var(--ios-ease);
+            will-change: opacity, transform;
+        }
+
+        .home-bg-layer.has-image { opacity: 1; }
+        .home-bg-layer.is-receded {
+            transform: scale3d(0.98, 0.98, 1);
+            filter: brightness(0.65);
+        }
+
+        .home-bg-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+        }
+
+        .home-bg-scrim {
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 50% 15%, rgba(7, 10, 20, 0.34) 0%, rgba(7, 10, 20, 0.72) 100%),
+                linear-gradient(180deg, rgba(7, 10, 20, 0.58) 0%, rgba(7, 10, 20, 0.32) 45%, rgba(7, 10, 20, 0.78) 100%);
+        }
+
+        .ambient-bg {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 1;
+            transition: opacity 0.45s ease;
+        }
+
+        .ambient-bg.has-wallpaper { opacity: 0.48; }
+
+        .ambient-orb {
+            position: absolute;
+            border-radius: 50%;
+            will-change: transform;
+            opacity: 0.42;
+            transform: translate3d(0, 0, 0);
+        }
+
+        .orb-1 {
+            width: 320px;
+            height: 320px;
+            top: -80px;
+            right: -60px;
+            background: radial-gradient(circle, var(--neon-1) 0%, transparent 68%);
+            animation: floatOrb1 14s ease-in-out infinite alternate;
+        }
+
+        .orb-2 {
+            width: 360px;
+            height: 360px;
+            bottom: -90px;
+            left: -80px;
+            background: radial-gradient(circle, var(--neon-2) 0%, transparent 68%);
+            animation: floatOrb2 16s ease-in-out infinite alternate;
+        }
+
+        @keyframes floatOrb1 {
+            0% { transform: translate3d(0, 0, 0) scale(1); }
+            100% { transform: translate3d(-20px, 28px, 0) scale(1.08); }
+        }
+        @keyframes floatOrb2 {
+            0% { transform: translate3d(0, 0, 0) scale(1); }
+            100% { transform: translate3d(24px, -22px, 0) scale(1.06); }
+        }
+
+        .weather-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 35;
+            opacity: 0;
+            transition: opacity 0.65s var(--ios-ease);
+        }
+        .weather-canvas.is-active { opacity: 1; }
+
+        .liquid-glass {
+            background: linear-gradient(145deg, var(--glass-bg-start) 0%, var(--glass-bg-end) 100%);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            box-shadow:
+                inset 0 1px 0 var(--glass-highlight),
+                var(--glass-shadow);
+            transition:
+                background 0.35s var(--ios-ease),
+                border-color 0.35s var(--ios-ease),
+                box-shadow 0.35s var(--ios-ease);
+        }
+
+        .liquid-glass-btn {
+            background: linear-gradient(145deg, var(--glass-btn-start) 0%, var(--glass-btn-end) 100%);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            box-shadow:
+                inset 0 1px 0 var(--glass-highlight),
+                0 6px 16px rgba(0, 0, 0, 0.32);
+            transition:
+                transform 0.2s var(--ios-spring),
+                background 0.35s var(--ios-ease),
+                border-color 0.35s var(--ios-ease),
+                box-shadow 0.35s var(--ios-ease);
+        }
+
+        .liquid-glass-btn:active { transform: scale3d(0.88, 0.88, 1); }
+
+        .header-spin-btn {
+            outline: none !important;
+            -webkit-tap-highlight-color: transparent !important;
+        }
+        .header-spin-btn:hover,
+        .header-spin-btn:focus,
+        .header-spin-btn:focus-visible,
+        .header-spin-btn:active {
+            outline: none !important;
+            border-color: var(--glass-border) !important;
+            box-shadow:
+                inset 0 1px 0 var(--glass-highlight),
+                0 6px 16px rgba(0, 0, 0, 0.32) !important;
+        }
+        .header-spin-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transform-origin: center center;
+            will-change: transform;
+        }
+
+        .neon-status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            direction: ltr;
+            padding: calc(env(safe-area-inset-top, 0px) + var(--native-top-offset, 34px)) 20px 4px 20px;
+            flex-shrink: 0;
+            z-index: 15;
+        }
+
+        .neon-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            border-radius: 9999px;
+            background: rgba(14, 19, 36, 0.56);
+            border: 1px solid color-mix(in srgb, var(--neon-1) 32%, rgba(255, 255, 255, 0.14));
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.18),
+                0 0 14px color-mix(in srgb, var(--neon-1) 20%, transparent);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            font-variant-numeric: tabular-nums;
+            transition: border-color 0.4s ease, box-shadow 0.4s ease;
+        }
+
+        .neon-status-pill.battery-pill {
+            border-color: color-mix(in srgb, var(--neon-2) 36%, rgba(255, 255, 255, 0.14));
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.18),
+                0 0 14px color-mix(in srgb, var(--neon-2) 22%, transparent);
+        }
+
+        .neon-clock-text {
+            font-size: 11.5px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            background: linear-gradient(90deg, #ffffff 15%, var(--neon-1) 95%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 10px color-mix(in srgb, var(--neon-1) 45%, transparent);
+        }
+
+        .neon-battery-text {
+            font-size: 11px;
+            font-weight: 700;
+            color: #f8fafc;
+            text-shadow: 0 0 8px color-mix(in srgb, var(--neon-2) 55%, transparent);
+        }
+
+        .battery-shell {
+            position: relative;
+            width: 22px;
+            height: 11px;
+            border-radius: 3.5px;
+            padding: 1.5px;
+            border: 1.3px solid var(--neon-1);
+            box-shadow: 0 0 8px color-mix(in srgb, var(--neon-1) 55%, transparent);
+            display: flex;
+            align-items: center;
+            transition: border-color 0.4s ease, box-shadow 0.4s ease;
+        }
+
+        .battery-shell::after {
+            content: '';
+            position: absolute;
+            right: -3.2px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2px;
+            height: 5px;
+            border-radius: 0 2px 2px 0;
+            background: var(--neon-1);
+            box-shadow: 0 0 6px var(--neon-1);
+        }
+
+        .battery-fill {
+            height: 100%;
+            width: 85%;
+            border-radius: 1.8px;
+            background: linear-gradient(90deg, var(--neon-1), var(--neon-2));
+            box-shadow: 0 0 6px var(--neon-1);
+            transition: width 0.5s var(--ios-ease), background 0.4s ease;
+        }
+
+        .battery-pill.is-low .battery-shell {
+            border-color: #ff2e93;
+            box-shadow: 0 0 8px rgba(255, 46, 147, 0.7);
+        }
+        .battery-pill.is-low .battery-shell::after { background: #ff2e93; }
+        .battery-pill.is-low .battery-fill {
+            background: linear-gradient(90deg, #ff2e93, #ff8a00);
+        }
+
+        .segmented-tabs-bar {
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            align-items: center;
+            padding: 4px;
+            border-radius: 9999px;
+            background: linear-gradient(145deg, var(--glass-bg-start), var(--glass-bg-end));
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            box-shadow:
+                inset 0 1px 0 var(--glass-highlight),
+                0 8px 20px rgba(0, 0, 0, 0.34);
+            overflow: hidden;
+            transition: background 0.35s var(--ios-ease), border-color 0.35s var(--ios-ease);
+        }
+
+        .tab-glider {
+            position: absolute;
+            top: 4px;
+            bottom: 4px;
+            right: 4px;
+            width: calc((100% - 8px) / 3);
+            border-radius: 9999px;
+            background: linear-gradient(135deg, var(--neon-1), var(--neon-2));
+            box-shadow:
+                0 4px 16px color-mix(in srgb, var(--neon-1) 42%, transparent),
+                inset 0 1px 0 rgba(255, 255, 255, 0.48);
+            transition: transform 0.44s cubic-bezier(0.22, 1.18, 0.36, 1), background 0.35s ease;
+            will-change: transform;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .segmented-tab-btn {
+            position: relative;
+            z-index: 2;
+            padding: 7px 6px;
+            border-radius: 9999px;
+            font-size: 11.5px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.78);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: color 0.3s ease, transform 0.2s var(--ios-spring);
+            white-space: nowrap;
+        }
+        .segmented-tab-btn:active { transform: scale3d(0.94, 0.94, 1); }
+        .segmented-tab-btn.is-active { color: #060912; font-weight: 800; }
+
+        .neon-circle-btn {
+            position: relative;
+            overflow: visible;
+            background: linear-gradient(145deg, color-mix(in srgb, var(--track-color-1) 18%, rgba(34, 44, 74, 0.88)), rgba(14, 19, 36, 0.94));
+            border: 1.5px solid color-mix(in srgb, var(--track-color-1) 68%, rgba(255, 255, 255, 0.22));
+            color: color-mix(in srgb, var(--track-color-1) 45%, #ffffff);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.28),
+                0 0 18px color-mix(in srgb, var(--track-color-1) 38%, transparent);
+            transition: transform 0.2s var(--ios-spring), border-color 0.45s var(--ios-ease), box-shadow 0.45s var(--ios-ease), background 0.45s var(--ios-ease), color 0.45s var(--ios-ease);
+        }
+
+        .neon-circle-btn.next-accent {
+            background: linear-gradient(145deg, color-mix(in srgb, var(--track-color-2) 18%, rgba(34, 44, 74, 0.88)), rgba(14, 19, 36, 0.94));
+            border-color: color-mix(in srgb, var(--track-color-2) 68%, rgba(255, 255, 255, 0.22));
+            color: color-mix(in srgb, var(--track-color-2) 45%, #ffffff);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.28),
+                0 0 18px color-mix(in srgb, var(--track-color-2) 38%, transparent);
+        }
+
+        .mini-nav-btn {
+            position: relative;
+            overflow: visible;
+            background: linear-gradient(145deg, color-mix(in srgb, var(--track-color-1) 15%, var(--glass-btn-start)), var(--glass-btn-end));
+            border: 1px solid color-mix(in srgb, var(--track-color-1) 52%, var(--glass-border));
+            color: color-mix(in srgb, var(--track-color-1) 38%, #ffffff);
+            box-shadow:
+                inset 0 1px 0 var(--glass-highlight),
+                0 0 12px color-mix(in srgb, var(--track-color-1) 28%, transparent);
+            transition: transform 0.2s var(--ios-spring), border-color 0.45s var(--ios-ease), box-shadow 0.45s var(--ios-ease), background 0.45s var(--ios-ease), color 0.45s var(--ios-ease);
+        }
+
+        .mini-nav-btn.next-accent {
+            background: linear-gradient(145deg, color-mix(in srgb, var(--track-color-2) 15%, var(--glass-btn-start)), var(--glass-btn-end));
+            border-color: color-mix(in srgb, var(--track-color-2) 52%, var(--glass-border));
+            color: color-mix(in srgb, var(--track-color-2) 38%, #ffffff);
+            box-shadow:
+                inset 0 1px 0 var(--glass-highlight),
+                0 0 12px color-mix(in srgb, var(--track-color-2) 28%, transparent);
+        }
+
+        .mini-nav-btn:active,
+        .neon-circle-btn:active { transform: scale3d(0.86, 0.86, 1); }
+
+        .neon-play-btn {
+            position: relative;
+            overflow: visible;
+            background: linear-gradient(135deg, var(--track-color-1), var(--track-color-2));
+            box-shadow:
+                0 0 28px color-mix(in srgb, var(--track-color-1) 55%, transparent),
+                0 10px 24px rgba(0, 0, 0, 0.45),
+                inset 0 1px 1px rgba(255, 255, 255, 0.55);
+            transition: transform 0.22s var(--ios-spring), background 0.45s var(--ios-ease), box-shadow 0.45s var(--ios-ease);
+        }
+
+        .neon-play-btn:active { transform: scale3d(0.9, 0.9, 1); }
+
+        .mini-play-btn-reactive {
+            position: relative;
+            overflow: visible;
+            border-color: color-mix(in srgb, var(--track-color-1) 42%, var(--glass-border));
+            box-shadow:
+                inset 0 1px 0 var(--glass-highlight),
+                0 0 14px color-mix(in srgb, var(--track-color-1) 25%, transparent);
+            transition: transform 0.2s var(--ios-spring), border-color 0.45s ease, box-shadow 0.45s ease;
+        }
+
+        .play-morph-stage {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .morph-icon {
+            position: absolute;
+            transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.26s ease;
+            will-change: transform, opacity;
+        }
+
+        .morph-icon.play-layer {
+            opacity: 1;
+            transform: scale3d(1, 1, 1) rotate(0deg);
+        }
+
+        .morph-icon.pause-layer {
+            opacity: 0;
+            transform: scale3d(0.45, 0.45, 1) rotate(-75deg);
+        }
+
+        .is-playing-btn .morph-icon.play-layer {
+            opacity: 0;
+            transform: scale3d(0.45, 0.45, 1) rotate(75deg);
+        }
+
+        .is-playing-btn .morph-icon.pause-layer {
+            opacity: 1;
+            transform: scale3d(1, 1, 1) rotate(0deg);
+        }
+
+        .nav-icon-wrap {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            will-change: transform;
+        }
+
+        .home-layer {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.52s var(--ios-ease), opacity 0.45s var(--ios-ease);
+            will-change: transform, opacity;
+            transform: translate3d(0, 0, 0);
+        }
+
+        .home-layer.is-receded {
+            transform: scale3d(0.94, 0.94, 1) translate3d(0, 8px, 0);
+            opacity: 0.42;
+            pointer-events: none;
+        }
+
+        .search-bar-glass {
+            background: linear-gradient(145deg, var(--glass-bg-start) 0%, var(--glass-bg-end) 100%);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            box-shadow:
+                inset 0 1px 0 var(--glass-highlight),
+                0 6px 18px rgba(0, 0, 0, 0.34);
+            transition: border-color 0.3s var(--ios-ease), box-shadow 0.3s var(--ios-ease), background 0.35s var(--ios-ease);
+        }
+
+        .search-bar-glass:focus-within {
+            border-color: color-mix(in srgb, var(--neon-1) 68%, rgba(255, 255, 255, 0.25));
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.3),
+                0 0 20px color-mix(in srgb, var(--neon-1) 28%, transparent);
+        }
+
+        .search-input-field {
+            user-select: text !important;
+            -webkit-user-select: text !important;
+        }
+
+        .mini-player-wrap {
+            transition: transform 0.44s var(--ios-spring), opacity 0.3s ease;
+            will-change: transform, opacity;
+        }
+
+        .mini-player-wrap.is-hidden {
+            transform: translate3d(0, 28px, 0) scale3d(0.94, 0.94, 1);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #mini-player.is-playing {
+            border-color: color-mix(in srgb, var(--track-color-1) 48%, var(--glass-border));
+            box-shadow:
+                inset 0 1px 0 var(--glass-highlight),
+                0 12px 28px rgba(0, 0, 0, 0.48),
+                0 0 24px color-mix(in srgb, var(--track-color-1) 24%, transparent);
+        }
+
+        #mini-cover.is-playing {
+            box-shadow: 0 0 16px color-mix(in srgb, var(--track-color-1) 52%, transparent);
+        }
+
+        #mini-progress {
+            position: relative;
+            transition: transform 0.22s linear;
+            box-shadow: 0 0 10px color-mix(in srgb, var(--track-color-1) 70%, transparent);
+        }
+
+        #mini-progress::after {
+            content: '';
+            position: absolute;
+            right: -1px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 6px;
+            border-radius: 9999px;
+            background: #ffffff;
+            box-shadow: 0 0 8px var(--track-color-1), 0 0 12px var(--track-color-2);
+        }
+
+        .full-player-sheet {
+            position: absolute;
+            inset: 0;
+            z-index: 40;
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle at 50% 18%, color-mix(in srgb, var(--track-color-1) 24%, #0d1326) 0%, #060912 72%);
+            transform: translate3d(0, 100%, 0);
+            opacity: 0;
+            pointer-events: none;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transition: transform 0.54s var(--ios-ease), opacity 0.36s var(--ios-ease);
+            will-change: transform, opacity;
+        }
+
+        .full-player-sheet.is-open {
+            transform: translate3d(0, 0, 0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .liquid-reveal-1,
+        .liquid-reveal-2,
+        .liquid-reveal-3 {
+            opacity: 0;
+            transform: translate3d(0, 18px, 0) scale3d(0.97, 0.97, 1);
+            transition: transform 0.55s var(--ios-ease), opacity 0.42s var(--ios-ease);
+            will-change: transform, opacity;
+        }
+
+        .full-player-sheet.is-open .liquid-reveal-1 {
+            opacity: 1;
+            transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
+            transition-delay: 0.06s;
+        }
+
+        .full-player-sheet.is-open .liquid-reveal-2 {
+            opacity: 1;
+            transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
+            transition-delay: 0.11s;
+        }
+
+        .full-player-sheet.is-open .liquid-reveal-3 {
+            opacity: 1;
+            transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
+            transition-delay: 0.16s;
+        }
+
+        .settings-sheet {
+            position: absolute;
+            inset: 0;
+            z-index: 55;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: rgba(5, 8, 17, 0);
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.36s var(--ios-ease), background 0.38s var(--ios-ease), backdrop-filter 0.38s var(--ios-ease);
+        }
+
+        .settings-sheet.is-open {
+            opacity: 1;
+            pointer-events: auto;
+            background: rgba(5, 8, 17, 0.62);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .settings-card {
+            width: 88%;
+            max-width: 332px;
+            max-height: 78%;
+            overflow-y: auto;
+            border-radius: 26px;
+            background: linear-gradient(155deg, rgba(22, 28, 48, 0.92) 0%, rgba(10, 14, 26, 0.96) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(22px) saturate(140%);
+            -webkit-backdrop-filter: blur(22px) saturate(140%);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.24),
+                0 20px 50px rgba(0, 0, 0, 0.65),
+                0 0 28px color-mix(in srgb, var(--neon-1) 18%, transparent);
+            transform-origin: center center;
+            will-change: transform, opacity, border-radius;
+            opacity: 0;
+        }
+
+        .settings-card .liquid-glass {
+            background: linear-gradient(145deg, var(--settings-surface-start) 0%, var(--settings-surface-end) 100%);
+            border-color: var(--settings-surface-border);
+            box-shadow:
+                inset 0 1px 0 var(--settings-surface-highlight),
+                0 8px 20px rgba(0, 0, 0, 0.38);
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+
+        .settings-card .liquid-glass-btn {
+            background: linear-gradient(145deg, rgba(44, 54, 86, 0.90) 0%, rgba(22, 28, 48, 0.95) 100%);
+            border-color: rgba(255, 255, 255, 0.18);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.20),
+                0 4px 12px rgba(0, 0, 0, 0.32);
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            color: #ffffff;
+        }
+
+        .settings-card::-webkit-scrollbar { display: none; }
+
+        .settings-inner-item {
+            opacity: 0;
+            transform: scale3d(0.92, 0.92, 1) translate3d(0, 6px, 0);
+            transition: opacity 0.28s var(--ios-ease), transform 0.32s var(--ios-ease);
+        }
+
+        .settings-sheet.is-open .settings-inner-item {
+            opacity: 1;
+            transform: scale3d(1, 1, 1) translate3d(0, 0, 0);
+        }
+
+        .settings-sheet.is-open .settings-inner-item:nth-child(1) { transition-delay: 0.11s; }
+        .settings-sheet.is-open .settings-inner-item:nth-child(2) { transition-delay: 0.15s; }
+        .settings-sheet.is-open .settings-inner-item:nth-child(3) { transition-delay: 0.19s; }
+        .settings-sheet.is-open .settings-inner-item:nth-child(4) { transition-delay: 0.23s; }
+
+        .settings-sheet.is-absorbing .settings-inner-item {
+            opacity: 0 !important;
+            transform: scale3d(0.75, 0.75, 1) !important;
+            transition: opacity 0.14s ease, transform 0.16s ease !important;
+            transition-delay: 0s !important;
+        }
+
+        .weather-mode-btn {
+            transition: transform 0.2s var(--ios-spring), border-color 0.28s ease, background 0.28s ease, box-shadow 0.28s ease, color 0.28s ease;
+        }
+        .weather-mode-btn:active { transform: scale3d(0.94, 0.94, 1); }
+        .weather-mode-btn.is-selected {
+            border-color: color-mix(in srgb, var(--neon-1) 76%, rgba(255, 255, 255, 0.35)) !important;
+            background: linear-gradient(135deg, color-mix(in srgb, var(--neon-1) 34%, rgba(30, 42, 74, 0.95)), color-mix(in srgb, var(--neon-2) 30%, rgba(16, 22, 42, 0.98))) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 0 14px color-mix(in srgb, var(--neon-1) 30%, transparent) !important;
+            color: #ffffff !important;
+        }
+
+        .glass-style-btn {
+            transition: transform 0.2s var(--ios-spring), border-color 0.28s ease, background 0.28s ease, box-shadow 0.28s ease, color 0.28s ease;
+        }
+        .glass-style-btn:active { transform: scale3d(0.94, 0.94, 1); }
+        .glass-style-btn.is-selected {
+            border-color: color-mix(in srgb, var(--neon-1) 78%, rgba(255, 255, 255, 0.38)) !important;
+            background: linear-gradient(135deg, color-mix(in srgb, var(--neon-1) 34%, rgba(32, 44, 76, 0.96)), color-mix(in srgb, var(--neon-2) 28%, rgba(18, 24, 46, 0.98))) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36), 0 0 14px color-mix(in srgb, var(--neon-1) 30%, transparent) !important;
+            color: #ffffff !important;
+        }
+
+        .glass-opacity-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 9999px;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.14), var(--neon-1), var(--neon-2));
+            outline: none;
+            cursor: pointer;
+        }
+        .glass-opacity-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid var(--neon-1);
+            box-shadow: 0 0 10px var(--neon-1);
+            cursor: pointer;
+        }
+
+        .album-art-frame {
+            transition: transform 0.55s var(--ios-spring), box-shadow 0.4s ease;
+            will-change: transform;
+        }
+        .album-art-frame.is-playing {
+            transform: scale3d(1.03, 1.03, 1);
+            box-shadow:
+                0 22px 48px rgba(0, 0, 0, 0.55),
+                0 0 38px color-mix(in srgb, var(--track-color-1) 42%, transparent);
+        }
+
+        .wave-touch-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            touch-action: pan-x;
+        }
+        .wave-touch-slider::-webkit-slider-runnable-track { height: 44px; background: transparent; }
+        .wave-touch-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 28px;
+            height: 44px;
+            background: transparent;
+            border: none;
+        }
+
+        .eq-bar {
+            width: 3px;
+            height: 22px;
+            border-radius: 999px;
+            transform-origin: bottom;
+            transform: scaleY(0.22);
+            will-change: transform;
+        }
+        .eq-active .eq-bar {
+            animation: eqPulse var(--d, 0.8s) ease-in-out infinite alternate;
+            animation-delay: var(--delay, 0s);
+        }
+        @keyframes eqPulse {
+            0% { transform: scaleY(0.2); }
+            100% { transform: scaleY(1); }
+        }
+
+        .track-scroll::-webkit-scrollbar { display: none; }
+        .track-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .track-card {
+            position: relative;
+            overflow: visible;
+            transform-origin: center center;
+            transition: border-color 0.35s var(--ios-ease), background 0.35s var(--ios-ease), box-shadow 0.35s var(--ios-ease);
+        }
+        .track-card.is-active {
+            border-color: color-mix(in srgb, var(--card-c1, var(--track-color-1)) 72%, var(--glass-border));
+            background: linear-gradient(135deg, color-mix(in srgb, var(--card-c1, var(--track-color-1)) 24%, var(--glass-bg-start)), var(--glass-bg-end));
+            box-shadow:
+                inset 0 1px 0 var(--glass-highlight),
+                0 0 24px color-mix(in srgb, var(--card-c1, var(--track-color-1)) 34%, transparent);
+        }
+        .track-card-title { transition: color 0.3s ease; }
+        .track-card.is-active .track-card-title { color: var(--card-c1, var(--track-color-1)); }
+
+        .fav-heart-wrap {
+            position: relative;
+            overflow: visible;
+        }
+
+        .toast-pill {
+            position: absolute;
+            top: calc(env(safe-area-inset-top, 0px) + var(--native-top-offset, 34px) - 2px);
+            left: 50%;
+            transform: translate3d(-50%, 0, 0) scale3d(0.05, 0.05, 1);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 80;
+            transform-origin: center center;
+            will-change: transform, opacity, border-radius;
+            border-color: color-mix(in srgb, var(--neon-1) 50%, var(--glass-border));
+            box-shadow:
+                inset 0 1px 0 var(--glass-highlight),
+                0 6px 18px rgba(0, 0, 0, 0.48),
+                0 0 16px color-mix(in srgb, var(--neon-1) 30%, transparent);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell" id="app-shell">
+        <div class="home-bg-layer" id="home-bg-layer">
+            <img id="home-bg-img" class="home-bg-img" src="" alt="">
+            <div class="home-bg-scrim"></div>
+        </div>
+
+        <div class="ambient-bg" id="ambient-bg">
+            <div class="ambient-orb orb-1"></div>
+            <div class="ambient-orb orb-2"></div>
+        </div>
+
+        <canvas id="weather-canvas" class="weather-canvas"></canvas>
+
+        <div id="toast" class="toast-pill liquid-glass px-3 py-1 rounded-full text-[11px] font-semibold text-white whitespace-nowrap flex items-center gap-1.5">
+            <span id="toast-dot" class="w-1.5 h-1.5 rounded-full shrink-0" style="background: var(--neon-1); box-shadow: 0 0 6px var(--neon-1);"></span>
+            <span id="toast-text">آهنگ اضافه شد</span>
+        </div>
+
+        <div class="home-layer" id="home-layer">
+            <div class="neon-status-bar">
+                <div class="neon-status-pill" id="neon-clock-pill">
+                    <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: var(--neon-1); box-shadow: 0 0 8px var(--neon-1);"></span>
+                    <span id="neon-status-clock" class="neon-clock-text">00:00</span>
+                </div>
+
+                <div class="neon-status-pill battery-pill" id="neon-battery-pill">
+                    <svg id="neon-battery-bolt" class="w-3 h-3 text-cyan-300 hidden" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/>
+                    </svg>
+                    <span id="neon-battery-text" class="neon-battery-text">85%</span>
+                    <div class="battery-shell">
+                        <div id="neon-battery-fill" class="battery-fill" style="width: 85%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <header class="flex items-center justify-between px-5 pt-2 pb-2.5 shrink-0">
+                <div>
+                    <h1 class="text-2xl font-extrabold tracking-tight bg-clip-text text-transparent"
+                        style="background-image: linear-gradient(90deg, #ffffff 10%, var(--neon-1) 60%, var(--neon-2) 100%);">
+                        لیکویید نئون
+                    </h1>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button id="theme-cycle-btn" aria-label="تغییر طیف نئون" title="تغییر طیف نئون"
+                        class="header-spin-btn liquid-glass-btn w-9 h-9 rounded-full flex items-center justify-center text-amber-300">
+                        <span class="header-spin-icon">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2l2.2 6.3L20.5 10.5l-6.3 2.2L12 19l-2.2-6.3L3.5 10.5l6.3-2.2L12 2zM19 16l.9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16z"/>
+                            </svg>
+                        </span>
+                    </button>
+
+                    <button id="open-settings-btn" aria-label="تنظیمات" title="تنظیمات"
+                        class="header-spin-btn liquid-glass-btn w-9 h-9 rounded-full flex items-center justify-center text-cyan-300">
+                        <span class="header-spin-icon">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                            </svg>
+                        </span>
+                    </button>
+
+                    <label for="audio-file-input" class="liquid-glass-btn cursor-pointer flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-white">
+                        <svg class="w-4 h-4 text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                        <span id="song-count-label">افزودن آهنگ</span>
+                    </label>
+                    <input type="file" id="audio-file-input" accept="audio/*" multiple class="hidden">
+                </div>
+            </header>
+
+            <div class="px-5 pb-2.5 shrink-0">
+                <div class="search-bar-glass rounded-full px-3.5 py-2 flex items-center gap-2.5">
+                    <svg class="w-4 h-4 text-cyan-300/85 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="7"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                    <input type="text" id="fast-search-input" placeholder="جستجوی سریع نام آهنگ یا خواننده..."
+                        autocomplete="off" spellcheck="false"
+                        class="search-input-field bg-transparent border-none outline-none text-xs text-white placeholder-white/45 flex-1 min-w-0">
+                    <span id="fast-search-count" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-400/15 text-cyan-200 border border-cyan-300/25 shrink-0"></span>
+                    <button type="button" id="fast-search-clear" aria-label="پاک کردن جستجو"
+                        class="hidden w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 flex items-center justify-center text-[11px] shrink-0 transition-transform active:scale-90">
+                        ✕
+                    </button>
+                </div>
+            </div>
+
+            <div class="px-5 pb-3 shrink-0">
+                <div class="segmented-tabs-bar" id="segmented-tabs-bar">
+                    <div class="tab-glider" id="tab-glider"></div>
+                    <button type="button" id="tab-all" class="segmented-tab-btn is-active">
+                        <span>همه آهنگ‌ها</span>
+                    </button>
+                    <button type="button" id="tab-fav" class="segmented-tab-btn">
+                        <span>علاقه‌مندی‌ها</span>
+                        <span class="text-pink-400">♥</span>
+                    </button>
+                    <button type="button" id="tab-artists" class="segmented-tab-btn">
+                        <span>خواننده‌ها</span>
+                    </button>
+                </div>
+            </div>
+
+            <main id="track-list" class="track-scroll flex-1 overflow-y-auto px-5 pb-32 space-y-3"></main>
+
+            <div id="mini-player-wrap" class="mini-player-wrap absolute bottom-4 left-4 right-4 z-20">
+                <div id="mini-player" class="liquid-glass rounded-[28px] p-2.5 relative overflow-hidden cursor-pointer">
+                    <div class="flex items-center justify-between gap-2.5">
+                        <div class="flex items-center gap-3 min-w-0 flex-1" id="mini-open-trigger">
+                            <div id="mini-cover" class="w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center shadow-lg relative overflow-hidden"
+                                style="background: linear-gradient(135deg, var(--track-color-1), var(--track-color-2));">
+                                <svg id="mini-cover-icon" class="w-6 h-6 text-white drop-shadow" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                                </svg>
+                                <img id="mini-cover-img" src="" alt="" decoding="async" style="display:none;" class="absolute inset-0 w-full h-full object-cover z-10">
+                            </div>
+                            <div class="min-w-0 text-right">
+                                <h3 id="mini-title" class="text-sm font-bold text-white truncate">Midnight Liquid</h3>
+                                <p id="mini-artist" class="text-[11px] text-white/65 truncate">Neon Pulse</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1.5 shrink-0" dir="ltr">
+                            <button id="mini-prev-btn" aria-label="آهنگ قبلی"
+                                class="mini-nav-btn w-9 h-9 rounded-full flex items-center justify-center">
+                                <span class="nav-icon-wrap" id="mini-prev-icon-wrap">
+                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+                                    </svg>
+                                </span>
+                            </button>
+                            <button id="mini-play-btn" aria-label="پخش یا توقف"
+                                class="liquid-glass-btn mini-play-btn-reactive w-10 h-10 rounded-full flex items-center justify-center text-white">
+                                <span class="play-morph-stage" id="mini-play-morph">
+                                    <svg class="morph-icon play-layer w-4 h-4 translate-x-[1px]" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                    <svg class="morph-icon pause-layer w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                                    </svg>
+                                </span>
+                            </button>
+                            <button id="mini-next-btn" aria-label="آهنگ بعدی"
+                                class="mini-nav-btn next-accent w-9 h-9 rounded-full flex items-center justify-center">
+                                <span class="nav-icon-wrap" id="mini-next-icon-wrap">
+                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+                                    </svg>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mt-2.5 h-[3px] w-full bg-white/10 rounded-full overflow-hidden" dir="ltr">
+                        <div id="mini-progress" class="h-full w-full rounded-full origin-left"
+                            style="transform: scaleX(0); background: linear-gradient(90deg, var(--track-color-1), var(--track-color-2));"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section id="settings-sheet" class="settings-sheet">
+            <div id="settings-card" class="settings-card p-4 space-y-3">
+                <div class="settings-inner-item flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-xl flex items-center justify-center border border-cyan-300/35"
+                            style="background: linear-gradient(135deg, color-mix(in srgb, var(--neon-1) 25%, rgba(28,36,64,0.9)), color-mix(in srgb, var(--neon-2) 25%, rgba(16,21,38,0.95)));">
+                            <svg class="w-4 h-4 text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-extrabold text-white">تنظیمات</h2>
+                            <p class="text-[10px] text-white/55">شیشه، آب‌وهوا و پس‌زمینه</p>
+                        </div>
+                    </div>
+                    <button type="button" id="close-settings-btn" aria-label="بستن تنظیمات"
+                        class="liquid-glass-btn w-8 h-8 rounded-full flex items-center justify-center text-white/85 text-xs">
+                        ✕
+                    </button>
+                </div>
+
+                <div class="settings-inner-item liquid-glass rounded-[20px] p-3 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                            <span>جنس شیشه و شفافیت</span>
+                            <span class="text-cyan-300">🧊</span>
+                        </span>
+                        <span id="glass-opacity-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-400/15 text-cyan-200 border border-cyan-300/25">82%</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" data-glass-style="dark" class="glass-style-btn liquid-glass-btn py-2 px-2.5 rounded-xl text-[11px] font-bold text-white flex items-center justify-center gap-1.5 is-selected">
+                            <span>🌑</span>
+                            <span>شیشه دارک</span>
+                        </button>
+                        <button type="button" data-glass-style="ice" class="glass-style-btn liquid-glass-btn py-2 px-2.5 rounded-xl text-[11px] font-bold text-white flex items-center justify-center gap-1.5">
+                            <span>❄️</span>
+                            <span>شیشه یخی</span>
+                        </button>
+                    </div>
+
+                    <div class="space-y-1 pt-0.5">
+                        <div class="flex items-center justify-between text-[10px] text-white/60">
+                            <span>شفاف</span>
+                            <span>کدر</span>
+                        </div>
+                        <input type="range" id="glass-opacity-slider" min="15" max="98" value="82" class="glass-opacity-slider" dir="ltr">
+                    </div>
+                </div>
+
+                <div class="settings-inner-item liquid-glass rounded-[20px] p-3 space-y-2">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <span class="text-xs font-bold text-white shrink-0">باران و برف 🌦️</span>
+                            <span id="weather-status-title" class="text-[10px] text-cyan-300/90 truncate">• خودکار</span>
+                        </div>
+                        <button type="button" id="refresh-weather-btn" title="به‌روزرسانی"
+                            class="liquid-glass-btn w-6 h-6 rounded-full flex items-center justify-center text-cyan-300 shrink-0">
+                            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <p id="weather-status-sub" class="text-[10px] text-white/55 truncate">همگام با اپ آب‌وهوا</p>
+
+                    <div class="grid grid-cols-4 gap-1.5">
+                        <button type="button" data-weather-mode="auto" class="weather-mode-btn liquid-glass-btn py-1.5 px-1 rounded-xl text-[10px] font-bold text-white flex flex-col items-center gap-0.5">
+                            <span>🌦️</span>
+                            <span>خودکار</span>
+                        </button>
+                        <button type="button" data-weather-mode="rain" class="weather-mode-btn liquid-glass-btn py-1.5 px-1 rounded-xl text-[10px] font-bold text-white flex flex-col items-center gap-0.5">
+                            <span>🌧️</span>
+                            <span>باران</span>
+                        </button>
+                        <button type="button" data-weather-mode="snow" class="weather-mode-btn liquid-glass-btn py-1.5 px-1 rounded-xl text-[10px] font-bold text-white flex flex-col items-center gap-0.5">
+                            <span>❄️</span>
+                            <span>برف</span>
+                        </button>
+                        <button type="button" data-weather-mode="off" class="weather-mode-btn liquid-glass-btn py-1.5 px-1 rounded-xl text-[10px] font-bold text-white flex flex-col items-center gap-0.5">
+                            <span>✨</span>
+                            <span>خاموش</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="settings-inner-item liquid-glass rounded-[20px] p-3 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-white">پس‌زمینه صفحه اصلی 🖼️</span>
+                        <span id="bg-status-tag" class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/10 text-white/65">پیش‌فرض</span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <label for="bg-image-input"
+                            class="flex-1 cursor-pointer py-2 px-3 rounded-xl text-[11px] font-bold text-slate-950 flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform"
+                            style="background: linear-gradient(135deg, var(--neon-1), var(--neon-2));">
+                            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="4"/>
+                                <circle cx="8.5" cy="8.5" r="1.5"/>
+                                <path d="M21 15l-5-5L5 21"/>
+                            </svg>
+                            <span>انتخاب تصویر</span>
+                        </label>
+                        <input type="file" id="bg-image-input" accept="image/*" class="hidden">
+
+                        <button type="button" id="bg-reset-btn"
+                            class="hidden liquid-glass-btn py-2 px-2.5 rounded-xl text-[11px] font-semibold text-pink-300 flex items-center justify-center gap-1">
+                            <span>حذف</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="full-player" class="full-player-sheet px-6 pt-3 pb-7 justify-between">
+            <div class="flex flex-col items-center shrink-0">
+                <div class="w-11 h-1.5 rounded-full bg-white/25 mb-3"></div>
+                <div class="w-full flex items-center justify-between">
+                    <button id="close-player-btn" aria-label="بستن صفحه پخش"
+                        class="liquid-glass-btn w-10 h-10 rounded-full flex items-center justify-center text-white/90">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 9l6 6 6-6"/>
+                        </svg>
+                    </button>
+
+                    <span class="text-xs font-semibold tracking-wide text-cyan-300/95">در حال پخش • Now Bar فعال</span>
+
+                    <button id="full-fav-btn" aria-label="افزودن به علاقه‌مندی‌ها"
+                        class="fav-heart-wrap liquid-glass-btn w-10 h-10 rounded-full flex items-center justify-center text-white/80">
+                        <svg id="full-fav-icon" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="liquid-reveal-1 flex flex-col items-center justify-center my-auto py-3">
+                <div id="album-art-frame" class="album-art-frame liquid-glass p-2.5 rounded-[36px] w-60 h-60 sm:w-64 sm:h-64">
+                    <div id="full-cover" class="w-full h-full rounded-[28px] relative overflow-hidden flex flex-col items-center justify-center shadow-inner"
+                        style="background: linear-gradient(135deg, var(--track-color-1), var(--track-color-2));">
+                        <img id="full-cover-img" src="" alt="" decoding="async" style="display:none;" class="absolute inset-0 w-full h-full object-cover z-0">
+
+                        <div class="absolute inset-0 pointer-events-none z-10"
+                            style="background: linear-gradient(180deg, rgba(255,255,255,0.22) 0%, transparent 45%, rgba(0,0,0,0.48) 100%);"></div>
+
+                        <svg id="full-cover-icon" class="w-16 h-16 text-white drop-shadow-lg mb-4 relative z-20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                        </svg>
+
+                        <div id="cover-eq" class="flex items-end gap-1.5 h-6 relative z-20 mt-auto mb-3">
+                            <span class="eq-bar bg-white/95" style="--d:0.75s; --delay:0.0s;"></span>
+                            <span class="eq-bar bg-cyan-200" style="--d:0.95s; --delay:0.15s;"></span>
+                            <span class="eq-bar bg-white" style="--d:0.65s; --delay:0.3s;"></span>
+                            <span class="eq-bar bg-pink-200" style="--d:0.85s; --delay:0.1s;"></span>
+                            <span class="eq-bar bg-white/95" style="--d:0.7s; --delay:0.25s;"></span>
+                            <span class="eq-bar bg-cyan-200" style="--d:0.9s; --delay:0.05s;"></span>
+                            <span class="eq-bar bg-white" style="--d:0.8s; --delay:0.2s;"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="full-track-meta" class="liquid-reveal-2 text-center mt-6 px-2 w-full">
+                    <h2 id="full-title" class="text-2xl font-extrabold text-white tracking-tight truncate">Midnight Liquid</h2>
+                    <p id="full-artist" class="text-sm font-medium text-cyan-200/80 mt-1 truncate">Neon Pulse • Liquid Audio</p>
+                </div>
+            </div>
+
+            <div class="liquid-reveal-3 liquid-glass rounded-[32px] p-5 space-y-4 shrink-0">
+                <div class="space-y-1" dir="ltr">
+                    <div class="relative w-full h-12 flex items-center">
+                        <canvas id="wave-seek-canvas" class="w-full h-full pointer-events-none block"></canvas>
+                        <input type="range" id="seek-slider" min="0" max="100" value="0" step="0.05"
+                            class="wave-touch-slider absolute inset-0 w-full h-full z-10 m-0">
+                    </div>
+                    <div class="flex justify-between text-[11px] font-medium text-white/60 px-1">
+                        <span id="current-time">0:00</span>
+                        <span id="total-duration">0:28</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-1" dir="ltr">
+                    <button id="shuffle-btn" aria-label="پخش تصادفی"
+                        class="w-9 h-9 rounded-full flex items-center justify-center text-white/55">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+                            <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+                            <line x1="4" y1="4" x2="9" y2="9"/>
+                        </svg>
+                    </button>
+
+                    <button id="full-prev-btn" aria-label="آهنگ قبلی"
+                        class="neon-circle-btn w-11 h-11 rounded-full flex items-center justify-center">
+                        <span class="nav-icon-wrap" id="full-prev-icon-wrap">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+                            </svg>
+                        </span>
+                    </button>
+
+                    <button id="full-play-btn" aria-label="پخش یا توقف"
+                        class="neon-play-btn w-16 h-16 rounded-full flex items-center justify-center text-slate-950">
+                        <span class="play-morph-stage" id="full-play-morph">
+                            <svg class="morph-icon play-layer w-7 h-7 translate-x-[1.5px]" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <svg class="morph-icon pause-layer w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                            </svg>
+                        </span>
+                    </button>
+
+                    <button id="full-next-btn" aria-label="آهنگ بعدی"
+                        class="neon-circle-btn next-accent w-11 h-11 rounded-full flex items-center justify-center">
+                        <span class="nav-icon-wrap" id="full-next-icon-wrap">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+                            </svg>
+                        </span>
+                    </button>
+
+                    <button id="repeat-btn" aria-label="تکرار آهنگ"
+                        class="w-9 h-9 rounded-full flex items-center justify-center text-white/55">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                            <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const isNativeAndroid = typeof window.AndroidBridge !== 'undefined';
+
+        const neonThemes = [
+            { name: 'سایان و بنفش', n1: '#00f0ff', n2: '#b537f2', n3: '#ff2e93' },
+            { name: 'صورتی و نارنجی نئون', n1: '#ff2e93', n2: '#ff8a00', n3: '#b537f2' },
+            { name: 'زمردی و آبی الکتریک', n1: '#00ff9d', n2: '#00b8ff', n3: '#7000ff' },
+            { name: 'طلایی و سرخابی', n1: '#ffe600', n2: '#ff006e', n3: '#3a86ff' }
+        ];
+
+        const tracks = [
+            {
+                id: 1,
+                title: 'Midnight Liquid',
+                artist: 'Neon Pulse • Liquid Audio',
+                duration: 28,
+                favorite: true,
+                colors: ['#00f0ff', '#b537f2'],
+                notes: [261.63, 329.63, 392.00, 493.88],
+                audioUrl: null,
+                artThumbUrl: null,
+                artFullUrl: null,
+                isNative: false,
+                nativeIndex: -1
+            }
+        ];
+
+        let currentIndex = 0;
+        let isPlaying = false;
+        let isShuffle = false;
+        let isRepeat = false;
+        let activeTab = 'all';
+        let selectedArtist = null;
+        let searchQuery = '';
+        let themeIndex = 0;
+        let currentTimeSec = 0;
+        let progressTimer = null;
+        let isFullPlayerOpen = false;
+        let isSeeking = false;
+        let activeCardEl = null;
+        let pressedCardEl = null;
+        let lastSlideDirection = 0;
+
+        let wavePhase = 0;
+        let waveEnergy = 0.2;
+        let smoothProgress = 0;
+        let waveAnimId = null;
+        let lastWaveTimestamp = 0;
+        let cachedWaveWidth = 0;
+        let cachedWaveHeight = 0;
+
+        const trackListEl = document.getElementById('track-list');
+        const homeLayer = document.getElementById('home-layer');
+        const miniPlayerWrap = document.getElementById('mini-player-wrap');
+        const fullPlayer = document.getElementById('full-player');
+        const seekSlider = document.getElementById('seek-slider');
+        const waveCanvas = document.getElementById('wave-seek-canvas');
+        const waveCtx = waveCanvas ? waveCanvas.getContext('2d') : null;
+        const toastEl = document.getElementById('toast');
+        const toastTextEl = document.getElementById('toast-text');
+        const toastDotEl = document.getElementById('toast-dot');
+        const searchInputEl = document.getElementById('fast-search-input');
+        const searchClearBtn = document.getElementById('fast-search-clear');
+        const searchCountEl = document.getElementById('fast-search-count');
+        const tabGliderEl = document.getElementById('tab-glider');
+        const tabAllBtn = document.getElementById('tab-all');
+        const tabFavBtn = document.getElementById('tab-fav');
+        const tabArtistsBtn = document.getElementById('tab-artists');
+
+        const GLASS_STYLE_STORAGE_KEY = 'neon_liquid_glass_style_v1';
+        const GLASS_OPACITY_STORAGE_KEY = 'neon_liquid_glass_opacity_v1';
+        let glassStyle = 'dark';
+        let glassOpacityPct = 82;
+
+        function applyGlassAppearance(style, opacityPct, persist = false) {
+            glassStyle = style === 'ice' ? 'ice' : 'dark';
+            glassOpacityPct = Math.max(15, Math.min(98, Number(opacityPct) || 82));
+
+            const root = document.documentElement;
+            const alpha = glassOpacityPct / 100;
+
+            if (glassStyle === 'ice') {
+                const a1 = Math.min(0.68, alpha * 0.44).toFixed(3);
+                const a2 = Math.min(0.56, alpha * 0.30).toFixed(3);
+                const b1 = Math.min(0.74, alpha * 0.50).toFixed(3);
+                const b2 = Math.min(0.60, alpha * 0.34).toFixed(3);
+                const borderA = (0.26 + alpha * 0.34).toFixed(3);
+                const hiA = (0.38 + alpha * 0.44).toFixed(3);
+                const blurPx = Math.round(14 + alpha * 16);
+
+                root.style.setProperty('--glass-bg-start', `rgba(225, 240, 255, ${a1})`);
+                root.style.setProperty('--glass-bg-end', `rgba(185, 212, 245, ${a2})`);
+                root.style.setProperty('--glass-btn-start', `rgba(235, 245, 255, ${b1})`);
+                root.style.setProperty('--glass-btn-end', `rgba(195, 220, 250, ${b2})`);
+                root.style.setProperty('--glass-border', `rgba(255, 255, 255, ${borderA})`);
+                root.style.setProperty('--glass-highlight', `rgba(255, 255, 255, ${hiA})`);
+                root.style.setProperty('--glass-blur', `${blurPx}px`);
+                root.style.setProperty('--glass-saturate', '185%');
+                root.style.setProperty('--glass-shadow', '0 10px 28px rgba(4, 10, 24, 0.34)');
+            } else {
+                const a1 = Math.max(0.14, alpha * 0.94).toFixed(3);
+                const a2 = Math.max(0.18, Math.min(0.98, alpha * 1.03)).toFixed(3);
+                const b1 = Math.max(0.16, Math.min(0.96, alpha * 0.98)).toFixed(3);
+                const b2 = Math.max(0.20, Math.min(0.98, alpha * 1.05)).toFixed(3);
+                const borderA = (0.10 + alpha * 0.14).toFixed(3);
+                const hiA = (0.14 + alpha * 0.18).toFixed(3);
+                const blurPx = Math.round(10 + (1 - alpha) * 14);
+
+                root.style.setProperty('--glass-bg-start', `rgba(32, 40, 68, ${a1})`);
+                root.style.setProperty('--glass-bg-end', `rgba(16, 21, 38, ${a2})`);
+                root.style.setProperty('--glass-btn-start', `rgba(44, 54, 88, ${b1})`);
+                root.style.setProperty('--glass-btn-end', `rgba(22, 28, 50, ${b2})`);
+                root.style.setProperty('--glass-border', `rgba(255, 255, 255, ${borderA})`);
+                root.style.setProperty('--glass-highlight', `rgba(255, 255, 255, ${hiA})`);
+                root.style.setProperty('--glass-blur', `${blurPx}px`);
+                root.style.setProperty('--glass-saturate', '135%');
+                root.style.setProperty('--glass-shadow', '0 10px 26px rgba(0, 0, 0, 0.42)');
+            }
+
+            const badge = document.getElementById('glass-opacity-badge');
+            const slider = document.getElementById('glass-opacity-slider');
+            if (badge) badge.textContent = `${glassOpacityPct}%`;
+            if (slider && Number(slider.value) !== glassOpacityPct) slider.value = glassOpacityPct;
+
+            document.querySelectorAll('.glass-style-btn').forEach(btn => {
+                btn.classList.toggle('is-selected', btn.getAttribute('data-glass-style') === glassStyle);
+            });
+
+            if (persist) {
+                try {
+                    localStorage.setItem(GLASS_STYLE_STORAGE_KEY, glassStyle);
+                    localStorage.setItem(GLASS_OPACITY_STORAGE_KEY, String(glassOpacityPct));
+                } catch (_) {}
+            }
+        }
+
+        function initGlassAppearance() {
+            let savedStyle = 'dark';
+            let savedOpacity = 82;
+            try {
+                const s = localStorage.getItem(GLASS_STYLE_STORAGE_KEY);
+                const o = localStorage.getItem(GLASS_OPACITY_STORAGE_KEY);
+                if (s === 'ice' || s === 'dark') savedStyle = s;
+                if (o !== null && !isNaN(Number(o))) savedOpacity = Number(o);
+            } catch (_) {}
+            applyGlassAppearance(savedStyle, savedOpacity, false);
+
+            document.querySelectorAll('.glass-style-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const nextStyle = btn.getAttribute('data-glass-style') || 'dark';
+                    const defaultOpacityForStyle = nextStyle === 'ice' ? 46 : 82;
+                    applyGlassAppearance(nextStyle, defaultOpacityForStyle, true);
+                    showToast(nextStyle === 'ice' ? 'حالت شیشه یخی فعال شد ❄️' : 'حالت شیشه دارک فعال شد 🌑');
+                });
+            });
+
+            const opacitySlider = document.getElementById('glass-opacity-slider');
+            if (opacitySlider) {
+                opacitySlider.addEventListener('input', (e) => {
+                    applyGlassAppearance(glassStyle, Number(e.target.value), true);
+                });
+            }
+        }
+
+        function updateNeonClock() {
+            const clockEl = document.getElementById('neon-status-clock');
+            if (!clockEl) return;
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            clockEl.textContent = `${hh}:${mm}`;
+        }
+
+        function applyBatteryState(levelRatio, charging) {
+            const pct = Math.max(1, Math.min(100, Math.round(levelRatio * 100)));
+            const textEl = document.getElementById('neon-battery-text');
+            const fillEl = document.getElementById('neon-battery-fill');
+            const pillEl = document.getElementById('neon-battery-pill');
+            const boltEl = document.getElementById('neon-battery-bolt');
+            if (textEl) textEl.textContent = `${pct}%`;
+            if (fillEl) fillEl.style.width = `${pct}%`;
+            if (pillEl) pillEl.classList.toggle('is-low', pct <= 20 && !charging);
+            if (boltEl) boltEl.classList.toggle('hidden', !charging);
+        }
+
+        function initNeonStatusBar() {
+            updateNeonClock();
+            setInterval(updateNeonClock, 10000);
+
+            if (isNativeAndroid && typeof window.AndroidBridge.getBatteryJson === 'function') {
+                const syncNativeBat = () => {
+                    try {
+                        const raw = window.AndroidBridge.getBatteryJson();
+                        if (raw) {
+                            const info = JSON.parse(raw);
+                            if (info && typeof info.level === 'number' && info.level >= 0) {
+                                applyBatteryState(info.level / 100, Boolean(info.charging));
+                            }
+                        }
+                    } catch (_) {}
+                };
+                syncNativeBat();
+                setInterval(syncNativeBat, 30000);
+                return;
+            }
+
+            if (navigator.getBattery) {
+                navigator.getBattery().then((battery) => {
+                    const syncBat = () => applyBatteryState(battery.level, battery.charging);
+                    syncBat();
+                    battery.addEventListener('levelchange', syncBat);
+                    battery.addEventListener('chargingchange', syncBat);
+                }).catch(() => {});
+            }
+        }
+
+        let toastTimeout = null;
+        let lastToastSourceEl = null;
+
+        function animateButtonDropletGulp(btnEl) {
+            if (!btnEl || typeof btnEl.animate !== 'function') return;
+            if (btnEl._gulpAnim) btnEl._gulpAnim.cancel();
+            btnEl._gulpAnim = btnEl.animate(
+                [
+                    { transform: 'scale3d(1, 1, 1)', offset: 0 },
+                    { transform: 'scale3d(1.22, 0.84, 1)', offset: 0.24 },
+                    { transform: 'scale3d(0.90, 1.12, 1)', offset: 0.52 },
+                    { transform: 'scale3d(1.05, 0.97, 1)', offset: 0.78 },
+                    { transform: 'scale3d(1, 1, 1)', offset: 1 }
+                ],
+                { duration: 480, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+            );
+        }
+
+        function hideToastDroplet(sourceEl) {
+            if (!toastEl) return;
+            const targetBtn = sourceEl || lastToastSourceEl;
+            if (!targetBtn || typeof toastEl.animate !== 'function') {
+                toastEl.style.opacity = '0';
+                return;
+            }
+            if (toastEl._dropAnim) toastEl._dropAnim.cancel();
+
+            const shellRect = document.getElementById('app-shell').getBoundingClientRect();
+            const btnRect = targetBtn.getBoundingClientRect();
+            const toastRect = toastEl.getBoundingClientRect();
+
+            const toastTopPx = parseFloat(getComputedStyle(toastEl).top) || 32;
+            const btnCenterX = (btnRect.left - shellRect.left) + btnRect.width * 0.5;
+            const btnCenterY = (btnRect.top - shellRect.top) + btnRect.height * 0.5;
+            const targetCenterX = shellRect.width * 0.5;
+            const targetCenterY = toastTopPx + (toastRect.height || 24) * 0.5;
+
+            const dx = btnCenterX - targetCenterX;
+            const dy = btnCenterY - targetCenterY;
+
+            const midX = dx * 0.42;
+            const midY = dy * 0.32 - 3;
+
+            const textNode = toastTextEl || toastEl;
+            if (textNode && typeof textNode.animate === 'function') {
+                if (textNode._txtAnim) textNode._txtAnim.cancel();
+                textNode._txtAnim = textNode.animate(
+                    [
+                        { opacity: 1, transform: 'scale3d(1, 1, 1)' },
+                        { opacity: 0, transform: 'scale3d(0.65, 0.65, 1)' }
+                    ],
+                    { duration: 160, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'forwards' }
+                );
+            }
+
+            toastEl._dropAnim = toastEl.animate(
+                [
+                    {
+                        transform: 'translate3d(-50%, 0px, 0) scale3d(1, 1, 1)',
+                        borderRadius: '9999px',
+                        opacity: 1,
+                        offset: 0
+                    },
+                    {
+                        transform: 'translate3d(-50%, -2px, 0) scale3d(0.92, 1.06, 1)',
+                        borderRadius: '9999px',
+                        opacity: 0.98,
+                        offset: 0.22
+                    },
+                    {
+                        transform: `translate3d(calc(-50% + ${midX.toFixed(1)}px), ${midY.toFixed(1)}px, 0) scale3d(0.44, 0.34, 1)`,
+                        borderRadius: '9999px',
+                        opacity: 0.9,
+                        offset: 0.62
+                    },
+                    {
+                        transform: `translate3d(calc(-50% + ${dx.toFixed(1)}px), ${dy.toFixed(1)}px, 0) scale3d(0.08, 0.08, 1)`,
+                        borderRadius: '9999px',
+                        opacity: 0,
+                        offset: 1
+                    }
+                ],
+                { duration: 420, easing: 'cubic-bezier(0.32, 0, 0.68, 0.22)', fill: 'forwards' }
+            );
+
+            setTimeout(() => animateButtonDropletGulp(targetBtn), 340);
+        }
+
+        function showToast(msg, sourceEl = null) {
+            if (!toastEl) return;
+            if (toastTextEl) {
+                if (toastTextEl._txtAnim) {
+                    toastTextEl._txtAnim.cancel();
+                    toastTextEl._txtAnim = null;
+                }
+                toastTextEl.textContent = msg;
+                toastTextEl.style.opacity = '1';
+                toastTextEl.style.transform = 'scale3d(1, 1, 1)';
+            } else {
+                toastEl.textContent = msg;
+            }
+            if (toastDotEl) {
+                toastDotEl.style.background = 'var(--neon-1)';
+                toastDotEl.style.boxShadow = '0 0 6px var(--neon-1)';
+            }
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+            if (toastEl._dropAnim) {
+                toastEl._dropAnim.cancel();
+                toastEl._dropAnim = null;
+            }
+
+            const originBtn = sourceEl || null;
+            lastToastSourceEl = originBtn;
+
+            if (!originBtn || typeof toastEl.animate !== 'function') {
+                toastEl.style.opacity = '1';
+                toastEl.style.transform = 'translate3d(-50%, 0, 0) scale3d(1, 1, 1)';
+                toastTimeout = setTimeout(() => {
+                    toastEl.style.opacity = '0';
+                }, 1900);
+                return;
+            }
+
+            const shellRect = document.getElementById('app-shell').getBoundingClientRect();
+            const btnRect = originBtn.getBoundingClientRect();
+            const toastTopPx = parseFloat(getComputedStyle(toastEl).top) || 32;
+            const toastH = toastEl.offsetHeight || 24;
+
+            const btnCenterX = (btnRect.left - shellRect.left) + btnRect.width * 0.5;
+            const btnCenterY = (btnRect.top - shellRect.top) + btnRect.height * 0.5;
+            const targetCenterX = shellRect.width * 0.5;
+            const targetCenterY = toastTopPx + toastH * 0.5;
+
+            const dx = btnCenterX - targetCenterX;
+            const dy = btnCenterY - targetCenterY;
+
+            toastEl.style.opacity = '1';
+            toastEl._dropAnim = toastEl.animate(
+                [
+                    {
+                        transform: `translate3d(calc(-50% + ${dx.toFixed(1)}px), ${dy.toFixed(1)}px, 0) scale3d(0.06, 0.06, 1)`,
+                        borderRadius: '9999px',
+                        opacity: 0.25,
+                        offset: 0
+                    },
+                    {
+                        transform: `translate3d(calc(-50% + ${(dx * 0.25).toFixed(1)}px), ${(dy * 0.22 - 4).toFixed(1)}px, 0) scale3d(0.78, 0.94, 1)`,
+                        borderRadius: '9999px',
+                        opacity: 0.96,
+                        offset: 0.45
+                    },
+                    {
+                        transform: 'translate3d(-50%, -2px, 0) scale3d(1.04, 0.97, 1)',
+                        borderRadius: '9999px',
+                        opacity: 1,
+                        offset: 0.78
+                    },
+                    {
+                        transform: 'translate3d(-50%, 0px, 0) scale3d(1, 1, 1)',
+                        borderRadius: '9999px',
+                        opacity: 1,
+                        offset: 1
+                    }
+                ],
+                { duration: 480, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' }
+            );
+
+            toastTimeout = setTimeout(() => hideToastDroplet(originBtn), 1850);
+        }
+
+        function formatTime(sec) {
+            const s = Math.max(0, Math.floor(sec || 0));
+            const mins = Math.floor(s / 60);
+            const secs = s % 60;
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        function normalizeSearchText(str) {
+            return String(str || '')
+                .toLowerCase()
+                .replace(/[يىی]/g, 'ی')
+                .replace(/[كک]/g, 'ک')
+                .replace(/[آأإ]/g, 'ا')
+                .replace(/[ً-ٰٟ‌]/g, '')
+                .trim();
+        }
+
+        function setSearchQuery(val) {
+            searchQuery = val || '';
+            if (searchInputEl && searchInputEl.value !== searchQuery) {
+                searchInputEl.value = searchQuery;
+            }
+            if (searchClearBtn) {
+                searchClearBtn.classList.toggle('hidden', !searchQuery.trim());
+            }
+            renderTrackList();
+        }
+
+        function applyCoverArt(imgEl, iconEl, artUrl) {
+            if (!imgEl) return;
+            const nextSrc = artUrl || '';
+            if (!nextSrc) {
+                imgEl.dataset.src = '';
+                imgEl.style.display = 'none';
+                imgEl.removeAttribute('src');
+                if (iconEl) iconEl.style.display = '';
+                return;
+            }
+            if (imgEl.dataset.src === nextSrc && imgEl.complete && imgEl.naturalWidth > 0) {
+                imgEl.style.display = 'block';
+                if (iconEl) iconEl.style.display = 'none';
+                return;
+            }
+            imgEl.dataset.src = nextSrc;
+            imgEl.onload = () => {
+                if (imgEl.dataset.src !== nextSrc) return;
+                imgEl.style.display = 'block';
+                if (iconEl) iconEl.style.display = 'none';
+            };
+            imgEl.onerror = () => {
+                if (imgEl.dataset.src !== nextSrc) return;
+                if (nextSrc.includes('q=thumb')) {
+                    const fullAlt = nextSrc.replace('q=thumb', 'q=full');
+                    imgEl.dataset.src = fullAlt;
+                    imgEl.src = fullAlt;
+                    return;
+                }
+                imgEl.style.display = 'none';
+                if (iconEl) iconEl.style.display = '';
+            };
+            imgEl.src = nextSrc;
+            if (imgEl.complete && imgEl.naturalWidth > 0) {
+                imgEl.style.display = 'block';
+                if (iconEl) iconEl.style.display = 'none';
+            }
+        }
+
+        function extractLocalAudioArtwork(file) {
+            return new Promise((resolve) => {
+                try {
+                    const slice = file.slice(0, 524288);
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        try {
+                            const buf = new Uint8Array(reader.result);
+                            let jpegStart = -1;
+                            for (let i = 0; i < buf.length - 3; i++) {
+                                if (buf[i] === 0xFF && buf[i + 1] === 0xD8 && buf[i + 2] === 0xFF) {
+                                    jpegStart = i;
+                                    break;
+                                }
+                            }
+                            if (jpegStart >= 0) {
+                                let jpegEnd = -1;
+                                for (let j = jpegStart + 2; j < buf.length - 1; j++) {
+                                    if (buf[j] === 0xFF && buf[j + 1] === 0xD9) {
+                                        jpegEnd = j + 2;
+                                        break;
+                                    }
+                                }
+                                if (jpegEnd > jpegStart + 100) {
+                                    const imgBlob = new Blob([buf.slice(jpegStart, jpegEnd)], { type: 'image/jpeg' });
+                                    resolve(URL.createObjectURL(imgBlob));
+                                    return;
+                                }
+                            }
+                            for (let i = 0; i < buf.length - 8; i++) {
+                                if (buf[i] === 0x89 && buf[i + 1] === 0x50 && buf[i + 2] === 0x4E && buf[i + 3] === 0x47) {
+                                    for (let j = i + 8; j < buf.length - 8; j++) {
+                                        if (buf[j] === 0x49 && buf[j + 1] === 0x45 && buf[j + 2] === 0x4E && buf[j + 3] === 0x44) {
+                                            const pngBlob = new Blob([buf.slice(i, j + 8)], { type: 'image/png' });
+                                            resolve(URL.createObjectURL(pngBlob));
+                                            return;
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (_) {}
+                        resolve(null);
+                    };
+                    reader.onerror = () => resolve(null);
+                    reader.readAsArrayBuffer(slice);
+                } catch (_) {
+                    resolve(null);
+                }
+            });
+        }
+
+        const WALLPAPER_STORAGE_KEY = 'neon_liquid_home_bg_v1';
+        const homeBgLayer = document.getElementById('home-bg-layer');
+        const homeBgImg = document.getElementById('home-bg-img');
+        const ambientBgEl = document.getElementById('ambient-bg');
+        const bgResetBtn = document.getElementById('bg-reset-btn');
+        const bgStatusTag = document.getElementById('bg-status-tag');
+        const bgImageInput = document.getElementById('bg-image-input');
+
+        function applyHomeWallpaper(dataUrl, persist = false) {
+            if (dataUrl) {
+                homeBgImg.src = dataUrl;
+                homeBgLayer.classList.add('has-image');
+                ambientBgEl.classList.add('has-wallpaper');
+                if (bgResetBtn) bgResetBtn.classList.remove('hidden');
+                if (bgStatusTag) {
+                    bgStatusTag.textContent = 'فعال';
+                    bgStatusTag.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-400/20 text-cyan-200 border border-cyan-300/35';
+                }
+                if (persist) {
+                    try { localStorage.setItem(WALLPAPER_STORAGE_KEY, dataUrl); } catch (_) {}
+                }
+            } else {
+                homeBgLayer.classList.remove('has-image');
+                ambientBgEl.classList.remove('has-wallpaper');
+                if (bgResetBtn) bgResetBtn.classList.add('hidden');
+                if (bgStatusTag) {
+                    bgStatusTag.textContent = 'پیش‌فرض';
+                    bgStatusTag.className = 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/10 text-white/65';
+                }
+                setTimeout(() => {
+                    if (!homeBgLayer.classList.contains('has-image')) homeBgImg.removeAttribute('src');
+                }, 560);
+                if (persist) {
+                    try { localStorage.removeItem(WALLPAPER_STORAGE_KEY); } catch (_) {}
+                }
+            }
+        }
+
+        function compressWallpaperFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(new Error('read_failed'));
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onerror = () => reject(new Error('decode_failed'));
+                    img.onload = () => {
+                        const maxDim = 1280;
+                        let w = img.naturalWidth || img.width;
+                        let h = img.naturalHeight || img.height;
+                        if (w > maxDim || h > maxDim) {
+                            const scale = maxDim / Math.max(w, h);
+                            w = Math.round(w * scale);
+                            h = Math.round(h * scale);
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', 0.85));
+                    };
+                    img.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function initHomeWallpaper() {
+            try {
+                const saved = localStorage.getItem(WALLPAPER_STORAGE_KEY);
+                if (saved) applyHomeWallpaper(saved, false);
+            } catch (_) {}
+
+            if (bgImageInput) {
+                bgImageInput.addEventListener('click', () => { bgImageInput.value = ''; });
+                bgImageInput.addEventListener('change', async (e) => {
+                    const file = e.target.files && e.target.files[0];
+                    if (!file) return;
+                    try {
+                        const compressedUrl = await compressWallpaperFile(file);
+                        applyHomeWallpaper(compressedUrl, true);
+                        showToast('تصویر پس‌زمینه اعمال شد 🖼️');
+                    } catch (_) {
+                        showToast('خطا در بارگذاری تصویر');
+                    }
+                });
+            }
+
+            if (bgResetBtn) {
+                bgResetBtn.addEventListener('click', () => {
+                    applyHomeWallpaper(null, true);
+                    showToast('پس‌زمینه پیش‌فرض بازگردانی شد');
+                });
+            }
+        }
+
+        const WEATHER_MODE_STORAGE_KEY = 'neon_liquid_weather_mode_v1';
+        const weatherCanvas = document.getElementById('weather-canvas');
+        const weatherCtx = weatherCanvas ? weatherCanvas.getContext('2d') : null;
+        const weatherStatusTitle = document.getElementById('weather-status-title');
+        const weatherStatusSub = document.getElementById('weather-status-sub');
+        const refreshWeatherBtn = document.getElementById('refresh-weather-btn');
+
+        let weatherMode = 'auto';
+        let liveDetectedWeather = 'none';
+        let effectiveWeather = 'none';
+        let weatherAnimId = null;
+        let weatherParticles = [];
+        let weatherSplashes = [];
+        let weatherW = 0;
+        let weatherH = 0;
+        let lastWeatherTs = 0;
+        let snowTime = 0;
+        let snowWindCurrent = 0;
+        let snowWindTarget = 0;
+        let snowWindTimer = 0;
+
+        function resizeWeatherCanvas() {
+            if (!weatherCanvas || !weatherCtx) return;
+            const rect = weatherCanvas.getBoundingClientRect();
+            if (!rect.width || !rect.height) return;
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            weatherW = rect.width;
+            weatherH = rect.height;
+            weatherCanvas.width = Math.round(rect.width * dpr);
+            weatherCanvas.height = Math.round(rect.height * dpr);
+            weatherCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function createWeatherParticles(type) {
+            weatherParticles = [];
+            weatherSplashes = [];
+            const w = weatherW || 380;
+            const h = weatherH || 780;
+
+            if (type === 'rain') {
+                const count = 78;
+                for (let i = 0; i < count; i++) {
+                    const depth = Math.random();
+                    weatherParticles.push({
+                        x: Math.random() * (w + 90) - 45,
+                        y: Math.random() * h,
+                        len: 12 + depth * 22,
+                        speed: 440 + depth * 360,
+                        drift: -38 - depth * 28,
+                        alpha: 0.18 + depth * 0.44,
+                        width: 0.9 + depth * 1.1,
+                        tint: i % 3 === 0 ? 'neon' : 'ice'
+                    });
+                }
+            } else if (type === 'snow') {
+                snowTime = 0;
+                snowWindCurrent = 0.18;
+                snowWindTarget = 0.25;
+                snowWindTimer = 0;
+                const count = 88;
+                for (let i = 0; i < count; i++) {
+                    const roll = Math.random();
+                    const layer = roll < 0.44 ? 0 : (roll < 0.80 ? 1 : 2);
+                    const depth = layer === 0
+                        ? Math.random() * 0.32
+                        : (layer === 1 ? 0.34 + Math.random() * 0.34 : 0.70 + Math.random() * 0.30);
+
+                    weatherParticles.push({
+                        layer,
+                        x: Math.random() * (w + 60) - 30,
+                        y: Math.random() * h,
+                        radius: layer === 0 ? (0.85 + Math.random() * 1.0) : (layer === 1 ? (1.8 + Math.random() * 1.4) : (3.1 + Math.random() * 2.1)),
+                        speed: layer === 0 ? (14 + Math.random() * 14) : (layer === 1 ? (28 + Math.random() * 20) : (48 + Math.random() * 26)),
+                        swayAmp1: layer === 0 ? (6 + Math.random() * 8) : (layer === 1 ? (14 + Math.random() * 14) : (22 + Math.random() * 18)),
+                        swayFreq1: 0.45 + Math.random() * 0.65,
+                        swayAmp2: 3 + depth * 8,
+                        swayFreq2: 1.1 + Math.random() * 1.1,
+                        phase1: Math.random() * Math.PI * 2,
+                        phase2: Math.random() * Math.PI * 2,
+                        flutterFreq: 1.4 + Math.random() * 1.8,
+                        flutterPhase: Math.random() * Math.PI * 2,
+                        twinkleFreq: 0.9 + Math.random() * 1.6,
+                        twinklePhase: Math.random() * Math.PI * 2,
+                        alpha: layer === 0 ? (0.24 + Math.random() * 0.24) : (layer === 1 ? (0.48 + Math.random() * 0.28) : (0.68 + Math.random() * 0.28)),
+                        rotation: Math.random() * Math.PI * 2,
+                        rotSpeed: (Math.random() - 0.5) * (0.45 + depth * 0.9),
+                        crystal: layer === 2 && i % 2 === 0,
+                        tint: i % 5 === 0 ? 'neon' : 'white'
+                    });
+                }
+            }
+        }
+
+        function drawCrystalFlake(ctx, radius, alpha, isNeon, neonHex) {
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.strokeStyle = isNeon ? neonHex : '#ffffff';
+            ctx.lineWidth = Math.max(0.85, radius * 0.22);
+            ctx.lineCap = 'round';
+            for (let a = 0; a < 3; a++) {
+                ctx.rotate(Math.PI / 3);
+                ctx.beginPath();
+                ctx.moveTo(-radius, 0);
+                ctx.lineTo(radius, 0);
+                ctx.stroke();
+
+                const bPos = radius * 0.52;
+                const bLen = radius * 0.34;
+                ctx.beginPath();
+                ctx.moveTo(bPos, 0);
+                ctx.lineTo(bPos + bLen * 0.6, -bLen * 0.7);
+                ctx.moveTo(bPos, 0);
+                ctx.lineTo(bPos + bLen * 0.6, bLen * 0.7);
+                ctx.moveTo(-bPos, 0);
+                ctx.lineTo(-bPos - bLen * 0.6, -bLen * 0.7);
+                ctx.moveTo(-bPos, 0);
+                ctx.lineTo(-bPos - bLen * 0.6, bLen * 0.7);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function weatherTick(ts) {
+            if (effectiveWeather === 'none' || !weatherCtx) {
+                weatherAnimId = null;
+                return;
+            }
+            const dt = lastWeatherTs ? Math.min(0.05, (ts - lastWeatherTs) / 1000) : 0.016;
+            lastWeatherTs = ts;
+
+            if (!weatherW || !weatherH) resizeWeatherCanvas();
+            const w = weatherW || 380;
+            const h = weatherH || 780;
+            const neon1 = getComputedStyle(document.documentElement).getPropertyValue('--neon-1').trim() || '#00f0ff';
+
+            weatherCtx.clearRect(0, 0, w, h);
+
+            if (effectiveWeather === 'rain') {
+                for (let i = 0; i < weatherParticles.length; i++) {
+                    const p = weatherParticles[i];
+                    p.x += p.drift * dt;
+                    p.y += p.speed * dt;
+
+                    if (p.y > h + 10) {
+                        if (weatherSplashes.length < 24 && Math.random() < 0.45) {
+                            weatherSplashes.push({
+                                x: Math.max(12, Math.min(w - 12, p.x)),
+                                y: h - 4 - Math.random() * 14,
+                                r: 1,
+                                maxR: 6 + Math.random() * 6,
+                                alpha: p.alpha * 0.9,
+                                neon: p.tint === 'neon'
+                            });
+                        }
+                        p.y = -20 - Math.random() * 40;
+                        p.x = Math.random() * (w + 90) - 45;
+                    }
+                    if (p.x < -50) p.x += w + 90;
+
+                    const angle = Math.atan2(p.speed, p.drift);
+                    const ex = p.x - Math.cos(angle) * p.len;
+                    const ey = p.y - Math.sin(angle) * p.len;
+
+                    const grad = weatherCtx.createLinearGradient(ex, ey, p.x, p.y);
+                    grad.addColorStop(0, 'rgba(255,255,255,0)');
+                    grad.addColorStop(1, p.tint === 'neon' ? neon1 : 'rgba(220, 245, 255, 0.95)');
+
+                    weatherCtx.save();
+                    weatherCtx.beginPath();
+                    weatherCtx.moveTo(ex, ey);
+                    weatherCtx.lineTo(p.x, p.y);
+                    weatherCtx.strokeStyle = grad;
+                    weatherCtx.globalAlpha = p.alpha;
+                    weatherCtx.lineWidth = p.width;
+                    weatherCtx.lineCap = 'round';
+                    weatherCtx.stroke();
+                    weatherCtx.restore();
+                }
+
+                for (let j = weatherSplashes.length - 1; j >= 0; j--) {
+                    const s = weatherSplashes[j];                    s.r += 24 * dt;
+                    s.alpha -= 1.45 * dt;
+                    if (s.alpha <= 0 || s.r >= s.maxR) {
+                        weatherSplashes.splice(j, 1);
+                        continue;
+                    }
+                    weatherCtx.save();
+                    weatherCtx.beginPath();
+                    weatherCtx.ellipse(s.x, s.y, s.r, s.r * 0.34, 0, 0, Math.PI * 2);
+                    weatherCtx.strokeStyle = s.neon ? neon1 : '#e0f7ff';
+                    weatherCtx.globalAlpha = Math.max(0, s.alpha);
+                    weatherCtx.lineWidth = 1;
+                    weatherCtx.stroke();
+                    weatherCtx.restore();
+                }
+            } else if (effectiveWeather === 'snow') {
+                snowTime += dt;
+                snowWindTimer += dt;
+                if (snowWindTimer > 4.2) {
+                    snowWindTimer = 0;
+                    snowWindTarget = (Math.random() - 0.42) * 0.75;
+                }
+                snowWindCurrent += (snowWindTarget - snowWindCurrent) * Math.min(1, dt * 0.65);
+
+                const mistGrad = weatherCtx.createLinearGradient(0, h - 38, 0, h);
+                mistGrad.addColorStop(0, 'rgba(220, 245, 255, 0)');
+                mistGrad.addColorStop(1, 'rgba(215, 242, 255, 0.08)');
+                weatherCtx.fillStyle = mistGrad;
+                weatherCtx.fillRect(0, h - 38, w, 38);
+
+                for (let i = 0; i < weatherParticles.length; i++) {
+                    const p = weatherParticles[i];
+                    const flutter = 0.84 + 0.24 * Math.sin(snowTime * p.flutterFreq + p.flutterPhase);
+                    p.y += p.speed * flutter * dt;
+
+                    const layerWindScale = p.layer === 0 ? 12 : (p.layer === 1 ? 26 : 42);
+                    const vx = snowWindCurrent * layerWindScale
+                        + Math.cos(snowTime * p.swayFreq1 + p.phase1) * p.swayAmp1 * 0.55
+                        + Math.sin(snowTime * p.swayFreq2 + p.phase2) * p.swayAmp2 * 0.45;
+                    p.x += vx * dt;
+                    p.rotation += p.rotSpeed * dt;
+
+                    if (p.y > h + 16) {
+                        p.y = -14 - Math.random() * 20;
+                        p.x = Math.random() * (w + 60) - 30;
+                    }
+                    if (p.x < -30) p.x += w + 60;
+                    else if (p.x > w + 30) p.x -= w + 60;
+
+                    const twinkle = 0.78 + 0.22 * Math.sin(snowTime * p.twinkleFreq + p.twinklePhase);
+                    const finalAlpha = Math.min(1, p.alpha * twinkle);
+                    const isNeon = p.tint === 'neon';
+
+                    if (p.crystal) {
+                        weatherCtx.save();
+                        weatherCtx.translate(p.x, p.y);
+                        weatherCtx.rotate(p.rotation);
+                        const aura = weatherCtx.createRadialGradient(0, 0, 0, 0, 0, p.radius * 2.2);
+                        aura.addColorStop(0, isNeon ? neon1 : 'rgba(255, 255, 255, 0.55)');
+                        aura.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                        weatherCtx.globalAlpha = finalAlpha * 0.35;
+                        weatherCtx.fillStyle = aura;
+                        weatherCtx.beginPath();
+                        weatherCtx.arc(0, 0, p.radius * 2.2, 0, Math.PI * 2);
+                        weatherCtx.fill();
+                        drawCrystalFlake(weatherCtx, p.radius * 1.15, finalAlpha * 0.92, isNeon, neon1);
+                        weatherCtx.restore();
+                    } else if (p.layer === 2) {
+                        const glowR = p.radius * 2.5;
+                        const g = weatherCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
+                        g.addColorStop(0, isNeon ? neon1 : 'rgba(255, 255, 255, 0.96)');
+                        g.addColorStop(0.38, isNeon ? neon1 : 'rgba(235, 248, 255, 0.55)');
+                        g.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                        weatherCtx.save();
+                        weatherCtx.globalAlpha = finalAlpha;
+                        weatherCtx.fillStyle = g;
+                        weatherCtx.beginPath();
+                        weatherCtx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
+                        weatherCtx.fill();
+                        weatherCtx.restore();
+                    } else {
+                        weatherCtx.save();
+                        weatherCtx.globalAlpha = finalAlpha;
+                        weatherCtx.fillStyle = isNeon ? neon1 : '#f4fbff';
+                        weatherCtx.beginPath();
+                        weatherCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                        weatherCtx.fill();
+                        weatherCtx.restore();
+                    }
+                }
+            }
+
+            weatherAnimId = requestAnimationFrame(weatherTick);
+        }
+
+        function applyEffectiveWeatherEffect() {
+            const target = weatherMode === 'auto' ? liveDetectedWeather : weatherMode;
+            if (target === effectiveWeather) return;
+            effectiveWeather = target;
+
+            if (weatherAnimId) {
+                cancelAnimationFrame(weatherAnimId);
+                weatherAnimId = null;
+            }
+
+            if (effectiveWeather === 'rain' || effectiveWeather === 'snow') {
+                resizeWeatherCanvas();
+                createWeatherParticles(effectiveWeather);
+                if (weatherCanvas) weatherCanvas.classList.add('is-active');
+                lastWeatherTs = 0;
+                weatherAnimId = requestAnimationFrame(weatherTick);
+            } else {
+                if (weatherCanvas) weatherCanvas.classList.remove('is-active');
+                if (weatherCtx) weatherCtx.clearRect(0, 0, weatherW || 500, weatherH || 900);
+            }
+        }
+
+        function updateWeatherModeButtonsUI() {
+            document.querySelectorAll('.weather-mode-btn').forEach(btn => {
+                const mode = btn.getAttribute('data-weather-mode');
+                btn.classList.toggle('is-selected', mode === weatherMode);
+            });
+        }
+
+        function setWeatherMode(mode, notify = true) {
+            weatherMode = mode || 'auto';
+            try { localStorage.setItem(WEATHER_MODE_STORAGE_KEY, weatherMode); } catch (_) {}
+            updateWeatherModeButtonsUI();
+            applyEffectiveWeatherEffect();
+
+            if (weatherMode === 'rain') {
+                if (weatherStatusTitle) weatherStatusTitle.textContent = '• باران دستی';
+                if (weatherStatusSub) weatherStatusSub.textContent = 'پخش جلوه باران نئونی';
+                if (notify) showToast('باران نئونی فعال شد 🌧️');
+            } else if (weatherMode === 'snow') {
+                if (weatherStatusTitle) weatherStatusTitle.textContent = '• برف دستی';
+                if (weatherStatusSub) weatherStatusSub.textContent = 'پخش جلوه برف نئونی';
+                if (notify) showToast('برف نئونی فعال شد ❄️');
+            } else if (weatherMode === 'off') {
+                if (weatherStatusTitle) weatherStatusTitle.textContent = '• خاموش';
+                if (weatherStatusSub) weatherStatusSub.textContent = 'فقط نورپردازی نئونی';
+                if (notify) showToast('جلوه آب‌وهوا خاموش شد');
+            } else {
+                if (weatherStatusTitle) weatherStatusTitle.textContent = '• خودکار';
+                if (notify) showToast('حالت خودکار آب‌وهوا فعال شد 🌦️');
+                syncLiveWeather(false);
+            }
+        }
+
+        function classifyWmoWeather(code, rainMm = 0, snowCm = 0) {
+            if (snowCm > 0 || (code >= 71 && code <= 77) || code === 85 || code === 86) return 'snow';
+            if (rainMm > 0 || (code >= 51 && code <= 67) || (code >= 80 && code <= 82) || (code >= 95 && code <= 99)) return 'rain';
+            return 'none';
+        }
+
+        function describeWmoWeather(code) {
+            if ((code >= 71 && code <= 77) || code === 85 || code === 86) return 'برفی';
+            if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return 'بارانی';
+            if (code >= 95) return 'رعدوبرق و باران';
+            if (code === 45 || code === 48) return 'مه‌آلود';
+            if (code === 1 || code === 2 || code === 3) return 'نیمه‌ابری';
+            return 'صاف';
+        }
+
+        window.onNativeWeatherUpdated = function(condition, tempC, cityName) {
+            const norm = String(condition || '').toLowerCase();
+            if (norm.includes('snow')) liveDetectedWeather = 'snow';
+            else if (norm.includes('rain') || norm.includes('drizzle') || norm.includes('storm')) liveDetectedWeather = 'rain';
+            else liveDetectedWeather = 'none';
+
+            const tempLabel = typeof tempC === 'number' ? ` • ${Math.round(tempC)}°` : '';
+            const placeLabel = cityName ? ` (${cityName})` : '';
+            if (weatherStatusTitle) weatherStatusTitle.textContent = `${tempLabel}${placeLabel}`;
+            if (weatherStatusSub) {
+                weatherStatusSub.textContent = liveDetectedWeather === 'rain'
+                    ? 'بارش باران فعال شد'
+                    : (liveDetectedWeather === 'snow' ? 'بارش برف فعال شد' : 'بدون بارش');
+            }
+            applyEffectiveWeatherEffect();
+        };
+
+        async function fetchOpenMeteoWeather(lat, lon, manualToast = false) {
+            try {
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=temperature_2m,precipitation,rain,snowfall,weather_code&timezone=auto`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('weather_http_error');
+                const data = await res.json();
+                const cur = data && data.current;
+                if (!cur) throw new Error('weather_empty');
+
+                const code = Number(cur.weather_code || 0);
+                const rainMm = Number(cur.rain || 0) + Number(cur.precipitation || 0);
+                const snowCm = Number(cur.snowfall || 0);
+                const temp = Math.round(Number(cur.temperature_2m || 0));
+
+                liveDetectedWeather = classifyWmoWeather(code, rainMm, snowCm);
+                const desc = describeWmoWeather(code);
+
+                if (weatherStatusTitle) weatherStatusTitle.textContent = `• ${desc} ${temp}°`;
+                if (weatherStatusSub) {
+                    weatherStatusSub.textContent = liveDetectedWeather === 'rain'
+                        ? 'بارش باران تشخیص داده شد'
+                        : (liveDetectedWeather === 'snow'
+                            ? 'بارش برف تشخیص داده شد'
+                            : 'هوا بدون بارش است');
+                }
+                applyEffectiveWeatherEffect();
+                if (manualToast) {
+                    showToast(`آب‌وهوا به‌روز شد: ${desc} (${temp}°)`);
+                }
+            } catch (_) {
+                if (weatherStatusTitle) weatherStatusTitle.textContent = '• آفلاین';
+                if (weatherStatusSub) weatherStatusSub.textContent = 'امکان انتخاب دستی باران یا برف';
+                if (manualToast) showToast('اتصال اینترنت برای هواشناسی برقرار نشد');
+            }
+        }
+
+        function syncLiveWeather(manualToast = false) {
+            if (isNativeAndroid && typeof window.AndroidBridge.requestWeatherSync === 'function') {
+                try { window.AndroidBridge.requestWeatherSync(); } catch (_) {}
+            }
+
+            if (weatherStatusSub) weatherStatusSub.textContent = 'در حال بررسی وضعیت آب‌وهوا...';
+
+            if (!navigator.geolocation) {
+                if (weatherStatusTitle) weatherStatusTitle.textContent = '• آماده';
+                if (weatherStatusSub) weatherStatusSub.textContent = 'مکان‌یابی در دسترس نیست (انتخاب دستی)';
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    fetchOpenMeteoWeather(pos.coords.latitude, pos.coords.longitude, manualToast);
+                },
+                () => {
+                    if (weatherStatusTitle) weatherStatusTitle.textContent = '• بدون مکان';
+                    if (weatherStatusSub) weatherStatusSub.textContent = 'دسترسی موقعیت بسته است (انتخاب دستی)';
+                    if (manualToast) showToast('دسترسی به موقعیت برای هواشناسی فعال نیست');
+                },
+                { enableHighAccuracy: false, timeout: 7000, maximumAge: 600000 }
+            );
+        }
+
+        function initWeatherEngine() {
+            try {
+                const saved = localStorage.getItem(WEATHER_MODE_STORAGE_KEY);
+                if (saved && ['auto', 'rain', 'snow', 'off'].includes(saved)) {
+                    weatherMode = saved;
+                }
+            } catch (_) {}
+
+            updateWeatherModeButtonsUI();
+            resizeWeatherCanvas();
+
+            document.querySelectorAll('.weather-mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const mode = btn.getAttribute('data-weather-mode');
+                    setWeatherMode(mode, true);
+                });
+            });
+
+            if (refreshWeatherBtn) {
+                refreshWeatherBtn.addEventListener('click', () => {
+                    if (weatherMode !== 'auto') setWeatherMode('auto', false);
+                    syncLiveWeather(true);
+                });
+            }
+
+            if (weatherMode === 'auto') {
+                syncLiveWeather(false);
+                setInterval(() => {
+                    if (weatherMode === 'auto') syncLiveWeather(false);
+                }, 15 * 60 * 1000);
+            } else {
+                setWeatherMode(weatherMode, false);
+            }
+        }
+
+        const settingsSheet = document.getElementById('settings-sheet');
+        const settingsCard = document.getElementById('settings-card');
+        const openSettingsBtn = document.getElementById('open-settings-btn');
+        const closeSettingsBtn = document.getElementById('close-settings-btn');
+        let isSettingsOpen = false;
+        let isSettingsAnimating = false;
+
+        function computeSettingsOriginDelta() {
+            const btnRect = openSettingsBtn.getBoundingClientRect();
+            const cardRect = settingsCard.getBoundingClientRect();
+            const btnCenterX = btnRect.left + btnRect.width * 0.5;
+            const btnCenterY = btnRect.top + btnRect.height * 0.5;
+            const cardCenterX = cardRect.left + cardRect.width * 0.5;
+            const cardCenterY = cardRect.top + cardRect.height * 0.5;
+            return {
+                dx: btnCenterX - cardCenterX,
+                dy: btnCenterY - cardCenterY
+            };
+        }
+
+        function animateSettingsButtonGulp() {
+            if (!openSettingsBtn || typeof openSettingsBtn.animate !== 'function') return;
+            if (openSettingsBtn._gulpAnim) openSettingsBtn._gulpAnim.cancel();
+            openSettingsBtn._gulpAnim = openSettingsBtn.animate(
+                [
+                    { transform: 'scale3d(1, 1, 1)', offset: 0 },
+                    { transform: 'scale3d(1.30, 0.78, 1)', offset: 0.22 },
+                    { transform: 'scale3d(0.86, 1.18, 1)', offset: 0.50 },
+                    { transform: 'scale3d(1.07, 0.94, 1)', offset: 0.76 },
+                    { transform: 'scale3d(1, 1, 1)', offset: 1 }
+                ],
+                { duration: 480, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+            );
+        }
+
+        function openSettingsSheet() {
+            if (isSettingsOpen || isSettingsAnimating) return;
+            isSettingsOpen = true;
+            isSettingsAnimating = true;
+
+            if (settingsCard._dropAnim) settingsCard._dropAnim.cancel();
+            settingsSheet.classList.remove('is-absorbing');
+            settingsSheet.classList.add('is-open');
+            settingsCard.style.opacity = '1';
+
+            const { dx, dy } = computeSettingsOriginDelta();
+
+            if (typeof settingsCard.animate === 'function') {
+                settingsCard._dropAnim = settingsCard.animate(
+                    [
+                        {
+                            transform: `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0) scale3d(0.06, 0.06, 1)`,
+                            borderRadius: '999px',
+                            opacity: 0.15,
+                            offset: 0
+                        },
+                        {
+                            transform: `translate3d(${(dx * 0.32).toFixed(1)}px, ${(dy * 0.32).toFixed(1)}px, 0) scale3d(0.62, 0.72, 1)`,
+                            borderRadius: '64px',
+                            opacity: 0.92,
+                            offset: 0.42
+                        },
+                        {
+                            transform: 'translate3d(0px, 0px, 0) scale3d(1.03, 0.985, 1)',
+                            borderRadius: '26px',
+                            opacity: 1,
+                            offset: 0.78
+                        },
+                        {
+                            transform: 'translate3d(0px, 0px, 0) scale3d(1, 1, 1)',
+                            borderRadius: '26px',
+                            opacity: 1,
+                            offset: 1
+                        }
+                    ],
+                    { duration: 480, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' }
+                );
+                settingsCard._dropAnim.onfinish = () => {
+                    isSettingsAnimating = false;
+                };
+            } else {
+                settingsCard.style.transform = 'translate3d(0, 0, 0) scale3d(1, 1, 1)';
+                isSettingsAnimating = false;
+            }
+        }
+
+        function closeSettingsSheet() {
+            if (!isSettingsOpen || isSettingsAnimating) return;
+            isSettingsOpen = false;
+            isSettingsAnimating = true;
+
+            if (settingsCard._dropAnim) settingsCard._dropAnim.cancel();
+            const { dx, dy } = computeSettingsOriginDelta();
+
+            // محتوا و سایه پس‌زمینه سریع‌تر جمع شوند تا خود حباب شیشه‌ای هنگام بلعیده شدن دیده شود
+            settingsSheet.classList.add('is-absorbing');
+            settingsSheet.style.background = 'rgba(5, 8, 17, 0)';
+            settingsSheet.style.backdropFilter = 'blur(0px)';
+            settingsSheet.style.webkitBackdropFilter = 'blur(0px)';
+
+            if (typeof settingsCard.animate === 'function') {
+                settingsCard._dropAnim = settingsCard.animate(
+                    [
+                        {
+                            transform: 'translate3d(0px, 0px, 0) scale3d(1, 1, 1)',
+                            borderRadius: '26px',
+                            opacity: 1,
+                            offset: 0
+                        },
+                        {
+                            transform: `translate3d(${(dx * 0.16).toFixed(1)}px, ${(dy * 0.16).toFixed(1)}px, 0) scale3d(0.76, 0.84, 1)`,
+                            borderRadius: '999px',
+                            opacity: 0.98,
+                            offset: 0.28
+                        },
+                        {
+                            transform: `translate3d(${(dx * 0.62).toFixed(1)}px, ${(dy * 0.62).toFixed(1)}px, 0) scale3d(0.32, 0.22, 1)`,
+                            borderRadius: '999px',
+                            opacity: 0.94,
+                            offset: 0.68
+                        },
+                        {
+                            transform: `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0) scale3d(0.05, 0.05, 1)`,
+                            borderRadius: '999px',
+                            opacity: 0.12,
+                            offset: 0.94
+                        },
+                        {
+                            transform: `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0) scale3d(0.01, 0.01, 1)`,
+                            borderRadius: '999px',
+                            opacity: 0,
+                            offset: 1
+                        }
+                    ],
+                    { duration: 460, easing: 'cubic-bezier(0.36, 0, 0.72, 0.24)', fill: 'forwards' }
+                );
+
+                // بلعیده شدن حباب توسط دکمه چرخ‌دنده هم‌زمان با رسیدن قطره
+                setTimeout(() => {
+                    spinHeaderIcon(openSettingsBtn, -180);
+                    animateSettingsButtonGulp();
+                }, 360);
+
+                settingsCard._dropAnim.onfinish = () => {
+                    settingsSheet.classList.remove('is-open', 'is-absorbing');
+                    settingsSheet.style.background = '';
+                    settingsSheet.style.backdropFilter = '';
+                    settingsSheet.style.webkitBackdropFilter = '';
+                    settingsCard.style.opacity = '0';
+                    isSettingsAnimating = false;
+                };
+            } else {
+                settingsSheet.classList.remove('is-open', 'is-absorbing');
+                settingsSheet.style.background = '';
+                settingsSheet.style.backdropFilter = '';
+                settingsSheet.style.webkitBackdropFilter = '';
+                settingsCard.style.opacity = '0';
+                isSettingsAnimating = false;
+            }
+        }
+
+        function spinHeaderIcon(btn, deg = 180) {
+            if (!btn) return;
+            const iconWrap = btn.querySelector('.header-spin-icon');
+            if (!iconWrap || typeof iconWrap.animate !== 'function') return;
+            const currentDeg = Number(iconWrap.dataset.rotDeg || 0);
+            const nextDeg = currentDeg + deg;
+            iconWrap.dataset.rotDeg = String(nextDeg);
+            iconWrap.animate(
+                [
+                    { transform: `rotate(${currentDeg}deg)` },
+                    { transform: `rotate(${nextDeg}deg)` }
+                ],
+                { duration: 480, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' }
+            );
+        }
+
+        if (openSettingsBtn) {
+            openSettingsBtn.addEventListener('click', () => {
+                spinHeaderIcon(openSettingsBtn, 180);
+                openSettingsSheet();
+            });
+        }
+        if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', closeSettingsSheet);
+        if (settingsSheet) {
+            settingsSheet.addEventListener('click', (e) => {
+                if (e.target === settingsSheet) closeSettingsSheet();
+            });
+        }
+
+        const htmlAudio = new Audio();
+        htmlAudio.preload = 'metadata';
+        htmlAudio.addEventListener('ended', () => {
+            if (isRepeat) {
+                currentTimeSec = 0;
+                smoothProgress = 0;
+                htmlAudio.currentTime = 0;
+                syncProgressUI();
+                if (isFullPlayerOpen) drawWaveProgress();
+                htmlAudio.play().catch(() => {});
+            } else {
+                nextTrack(true);
+            }
+        });
+
+        let audioCtx = null;
+        let synthInterval = null;
+        let synthStep = 0;
+
+        function startAmbientSynth(track) {
+            stopAmbientSynth();
+            if (isNativeAndroid && track.isNative) return;
+            try {
+                if (!audioCtx) {
+                    const Ctx = window.AudioContext || window.webkitAudioContext;
+                    audioCtx = new Ctx();
+                }
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const playChordNote = () => {
+                    if (!isPlaying || track.audioUrl || track.isNative) return;
+                    const now = audioCtx.currentTime;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    const notes = track.notes || [261.63, 329.63, 392.00, 493.88];
+                    const freq = notes[synthStep % notes.length];
+                    synthStep++;
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now);
+                    gain.gain.setValueAtTime(0.0001, now);
+                    gain.gain.exponentialRampToValueAtTime(0.045, now + 0.18);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.35);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 1.4);
+                };
+                playChordNote();
+                synthInterval = setInterval(playChordNote, 1100);
+            } catch (_) {}
+        }
+
+        function stopAmbientSynth() {
+            if (synthInterval) {
+                clearInterval(synthInterval);
+                synthInterval = null;
+            }
+        }
+
+        function applyTrackColors(c1, c2) {
+            document.documentElement.style.setProperty('--track-color-1', c1);
+            document.documentElement.style.setProperty('--track-color-2', c2);
+        }
+
+        function animateCardSpring(card, colorHex) {
+            if (!card || typeof card.animate !== 'function') return;
+            card.style.transition = '';
+            card.style.transform = '';
+            if (card._springAnim) card._springAnim.cancel();
+            card._springAnim = card.animate(
+                [
+                    { transform: 'scale3d(0.92, 0.92, 1)', offset: 0 },
+                    { transform: 'scale3d(1.045, 1.045, 1)', offset: 0.36 },
+                    { transform: 'scale3d(0.982, 0.982, 1)', offset: 0.64 },
+                    { transform: 'scale3d(1.014, 1.014, 1)', offset: 0.84 },
+                    { transform: 'scale3d(1, 1, 1)', offset: 1 }
+                ],
+                { duration: 540, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'none' }
+            );
+
+            const clipWrap = document.createElement('span');
+            clipWrap.style.cssText = 'position:absolute;inset:0;border-radius:24px;overflow:hidden;pointer-events:none;z-index:15;';
+            const shimmer = document.createElement('span');
+            shimmer.style.cssText = `position:absolute;inset:0;background:linear-gradient(110deg, transparent 15%, ${colorHex || '#00f0ff'}48 50%, transparent 85%);`;
+            clipWrap.appendChild(shimmer);
+            card.appendChild(clipWrap);
+            const shimmerAnim = shimmer.animate(
+                [
+                    { transform: 'translate3d(100%, 0, 0)', opacity: 0.95 },
+                    { transform: 'translate3d(-100%, 0, 0)', opacity: 0 }
+                ],
+                { duration: 520, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+            );
+            shimmerAnim.onfinish = () => clipWrap.remove();
+        }
+
+        function spawnButtonPulseRing(btn, colorHex) {
+            if (!btn || typeof btn.animate !== 'function') return;
+            const ring = document.createElement('span');
+            ring.style.cssText = `position:absolute;inset:-2px;border-radius:9999px;border:1.5px solid ${colorHex};box-shadow:0 0 12px ${colorHex};pointer-events:none;z-index:25;`;
+            btn.appendChild(ring);
+            const anim = ring.animate(
+                [
+                    { transform: 'scale3d(0.88, 0.88, 1)', opacity: 0.92 },
+                    { transform: 'scale3d(1.48, 1.48, 1)', opacity: 0 }
+                ],
+                { duration: 480, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
+            );
+            anim.onfinish = () => ring.remove();
+        }
+
+        function animateDirectionalButton(btn, iconWrap, dir, colorHex) {
+            if (!btn || typeof btn.animate !== 'function') return;
+            if (btn._springBtnAnim) btn._springBtnAnim.cancel();
+            btn._springBtnAnim = btn.animate(
+                [
+                    { transform: 'scale3d(0.84, 0.84, 1)', offset: 0 },
+                    { transform: 'scale3d(1.13, 1.13, 1)', offset: 0.35 },
+                    { transform: 'scale3d(0.95, 0.95, 1)', offset: 0.65 },
+                    { transform: 'scale3d(1.03, 1.03, 1)', offset: 0.84 },
+                    { transform: 'scale3d(1, 1, 1)', offset: 1 }
+                ],
+                { duration: 480, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+            );
+
+            if (iconWrap && typeof iconWrap.animate === 'function') {
+                if (iconWrap._nudgeAnim) iconWrap._nudgeAnim.cancel();
+                const shiftOut = dir * 9;
+                const shiftIn = -dir * 11;
+                iconWrap._nudgeAnim = iconWrap.animate(
+                    [
+                        { transform: 'translate3d(0, 0, 0) scale3d(1, 1, 1)', opacity: 1, offset: 0 },
+                        { transform: `translate3d(${shiftOut}px, 0, 0) scale3d(0.72, 0.72, 1)`, opacity: 0.15, offset: 0.32 },
+                        { transform: `translate3d(${shiftIn}px, 0, 0) scale3d(0.82, 0.82, 1)`, opacity: 0.25, offset: 0.36 },
+                        { transform: `translate3d(${-dir * 2.5}px, 0, 0) scale3d(1.08, 1.08, 1)`, opacity: 1, offset: 0.74 },
+                        { transform: 'translate3d(0, 0, 0) scale3d(1, 1, 1)', opacity: 1, offset: 1 }
+                    ],
+                    { duration: 460, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+                );
+            }
+
+            spawnButtonPulseRing(btn, colorHex);
+        }
+
+        function animatePlayPauseSpring(btn, colorHex) {
+            if (!btn || typeof btn.animate !== 'function') return;
+            if (btn._playSpringAnim) btn._playSpringAnim.cancel();
+            btn._playSpringAnim = btn.animate(
+                [
+                    { transform: 'scale3d(0.84, 0.84, 1)', offset: 0 },
+                    { transform: 'scale3d(1.14, 1.14, 1)', offset: 0.36 },
+                    { transform: 'scale3d(0.95, 0.95, 1)', offset: 0.66 },
+                    { transform: 'scale3d(1.03, 1.03, 1)', offset: 0.85 },
+                    { transform: 'scale3d(1, 1, 1)', offset: 1 }
+                ],
+                { duration: 500, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+            );
+            spawnButtonPulseRing(btn, colorHex);
+        }
+
+        function animateCoverSlide(dir) {
+            if (!dir) return;
+            const artFrame = document.getElementById('album-art-frame');
+            const fullMeta = document.getElementById('full-track-meta');
+            const miniTrigger = document.getElementById('mini-open-trigger');
+            const enterX = dir * 24;
+
+            if (artFrame && typeof artFrame.animate === 'function') {
+                if (artFrame._slideAnim) artFrame._slideAnim.cancel();
+                artFrame._slideAnim = artFrame.animate(
+                    [
+                        { transform: `translate3d(${enterX}px, 0, 0) scale3d(0.94, 0.94, 1)`, opacity: 0.45, offset: 0 },
+                        { transform: `translate3d(${-dir * 4}px, 0, 0) scale3d(1.015, 1.015, 1)`, opacity: 1, offset: 0.65 },
+                        { transform: 'translate3d(0, 0, 0) scale3d(1, 1, 1)', opacity: 1, offset: 1 }
+                    ],
+                    { duration: 420, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+                );
+            }
+
+            if (fullMeta && typeof fullMeta.animate === 'function') {
+                if (fullMeta._slideAnim) fullMeta._slideAnim.cancel();
+                fullMeta._slideAnim = fullMeta.animate(
+                    [
+                        { transform: `translate3d(${enterX * 0.7}px, 0, 0)`, opacity: 0.35 },
+                        { transform: 'translate3d(0, 0, 0)', opacity: 1 }
+                    ],
+                    { duration: 360, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+                );
+            }
+
+            if (miniTrigger && typeof miniTrigger.animate === 'function') {
+                if (miniTrigger._slideAnim) miniTrigger._slideAnim.cancel();
+                miniTrigger._slideAnim = miniTrigger.animate(
+                    [
+                        { transform: `translate3d(${enterX * 0.55}px, 0, 0)`, opacity: 0.45 },
+                        { transform: 'translate3d(0, 0, 0)', opacity: 1 }
+                    ],
+                    { duration: 340, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+                );
+            }
+        }
+
+        function triggerNextFeedback() {
+            const track = tracks[currentIndex] || tracks[0];
+            const c2 = (track && track.colors && track.colors[1]) || '#b537f2';
+            lastSlideDirection = 1;
+            animateDirectionalButton(
+                document.getElementById('full-next-btn'),
+                document.getElementById('full-next-icon-wrap'),
+                1,
+                c2
+            );
+            animateDirectionalButton(
+                document.getElementById('mini-next-btn'),
+                document.getElementById('mini-next-icon-wrap'),
+                1,
+                c2
+            );
+        }
+
+        function triggerPrevFeedback() {
+            const track = tracks[currentIndex] || tracks[0];
+            const c1 = (track && track.colors && track.colors[0]) || '#00f0ff';
+            lastSlideDirection = -1;
+            animateDirectionalButton(
+                document.getElementById('full-prev-btn'),
+                document.getElementById('full-prev-icon-wrap'),
+                -1,
+                c1
+            );
+            animateDirectionalButton(
+                document.getElementById('mini-prev-btn'),
+                document.getElementById('mini-prev-icon-wrap'),
+                -1,
+                c1
+            );
+        }
+
+        function triggerPlayFeedback() {
+            const track = tracks[currentIndex] || tracks[0];
+            const c1 = (track && track.colors && track.colors[0]) || '#00f0ff';
+            animatePlayPauseSpring(document.getElementById('full-play-btn'), c1);
+            animatePlayPauseSpring(document.getElementById('mini-play-btn'), c1);
+        }
+
+        function updateActiveCardUI(idx, triggerSpring) {
+            if (activeCardEl) activeCardEl.classList.remove('is-active');
+            const nextCard = trackListEl.querySelector(`.track-card[data-index="${idx}"]`);
+            activeCardEl = nextCard;
+            if (!nextCard) return;
+
+            const track = tracks[idx];
+            const c1 = track ? track.colors[0] : '#00f0ff';
+            nextCard.style.setProperty('--card-c1', c1);
+            nextCard.classList.add('is-active');
+
+            if (triggerSpring) animateCardSpring(nextCard, c1);
+        }
+
+        function animateHeartButton(btn, isFav) {
+            if (!btn) return;
+            const svg = btn.querySelector('svg');
+            if (svg && typeof svg.animate === 'function') {
+                if (svg._heartAnim) svg._heartAnim.cancel();
+                if (isFav) {
+                    svg._heartAnim = svg.animate(
+                        [
+                            { transform: 'scale3d(0.5, 0.5, 1) rotate(0deg)', offset: 0 },
+                            { transform: 'scale3d(1.55, 1.55, 1) rotate(-14deg)', offset: 0.34 },
+                            { transform: 'scale3d(0.84, 0.84, 1) rotate(8deg)', offset: 0.62 },
+                            { transform: 'scale3d(1.16, 1.16, 1) rotate(-3deg)', offset: 0.82 },
+                            { transform: 'scale3d(1, 1, 1) rotate(0deg)', offset: 1 }
+                        ],
+                        { duration: 560, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+                    );
+                } else {
+                    svg._heartAnim = svg.animate(
+                        [
+                            { transform: 'scale3d(1, 1, 1)', offset: 0 },
+                            { transform: 'scale3d(0.7, 0.7, 1)', offset: 0.45 },
+                            { transform: 'scale3d(1.08, 1.08, 1)', offset: 0.8 },
+                            { transform: 'scale3d(1, 1, 1)', offset: 1 }
+                        ],
+                        { duration: 300, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+                    );
+                }
+            }
+
+            if (!isFav) return;
+
+            const ring = document.createElement('span');
+            ring.style.cssText = 'position:absolute;left:50%;top:50%;width:32px;height:32px;margin-left:-16px;margin-top:-16px;border-radius:9999px;border:2px solid #ff2e93;box-shadow:0 0 14px rgba(255,46,147,0.92);pointer-events:none;z-index:30;';
+            btn.appendChild(ring);
+            const ringAnim = ring.animate(
+                [
+                    { transform: 'scale3d(0.35, 0.35, 1)', opacity: 1 },
+                    { transform: 'scale3d(1.85, 1.85, 1)', opacity: 0 }
+                ],
+                { duration: 520, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
+            );
+            ringAnim.onfinish = () => ring.remove();
+
+            const colors = ['#ff2e93', '#00f0ff', '#ff6ec7', '#ffffff', '#ff2e93', '#b537f2'];
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI * 2 * i) / 6 - Math.PI / 6;
+                const dist = 20 + (i % 2) * 5;
+                const dx = Math.cos(angle) * dist;
+                const dy = Math.sin(angle) * dist;
+                const dot = document.createElement('span');
+                dot.style.cssText = `position:absolute;left:50%;top:50%;width:5px;height:5px;margin-left:-2.5px;margin-top:-2.5px;border-radius:9999px;background:${colors[i]};box-shadow:0 0 8px ${colors[i]};pointer-events:none;z-index:30;`;
+                btn.appendChild(dot);
+                const dotAnim = dot.animate(
+                    [
+                        { transform: 'translate3d(0, 0, 0) scale3d(1.1, 1.1, 1)', opacity: 1 },
+                        { transform: `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0) scale3d(0.2, 0.2, 1)`, opacity: 0 }
+                    ],
+                    { duration: 480, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
+                );
+                dotAnim.onfinish = () => dot.remove();
+            }
+        }
+
+        function updateHeartSvg(svg, isFav, inactiveStroke) {
+            if (!svg) return;
+            svg.setAttribute('fill', isFav ? '#ff2e93' : 'none');
+            svg.setAttribute('stroke', isFav ? '#ff2e93' : inactiveStroke);
+        }
+
+        function toggleFavoriteById(id, clickedBtn) {
+            const item = tracks.find(t => t.id === id);
+            if (!item) return;
+            item.favorite = !item.favorite;
+
+            const listBtn = clickedBtn || trackListEl.querySelector(`[data-fav-id="${id}"]`);
+            if (listBtn) {
+                updateHeartSvg(listBtn.querySelector('svg'), item.favorite, 'rgba(255,255,255,0.55)');
+                if (!isFullPlayerOpen || clickedBtn) animateHeartButton(listBtn, item.favorite);
+            }
+
+            if (tracks[currentIndex] && tracks[currentIndex].id === id) {
+                const fullBtn = document.getElementById('full-fav-btn');
+                updateHeartSvg(document.getElementById('full-fav-icon'), item.favorite, 'currentColor');
+                if (isFullPlayerOpen) animateHeartButton(fullBtn, item.favorite);
+            }
+
+            if (activeTab === 'fav' && !item.favorite && listBtn) {
+                const card = listBtn.closest('.track-card');
+                if (card) {
+                    const anim = card.animate(
+                        [
+                            { transform: 'scale3d(1, 1, 1)', opacity: 1 },
+                            { transform: 'scale3d(0.9, 0.9, 1)', opacity: 0 }
+                        ],
+                        { duration: 240, easing: 'ease-out', fill: 'forwards' }
+                    );
+                    anim.onfinish = () => {
+                        card.remove();
+                        if (!trackListEl.querySelector('.track-card')) renderTrackList();
+                    };
+                }
+            }
+
+            showToast(item.favorite ? 'به علاقه‌مندی‌ها اضافه شد ♥' : 'از علاقه‌مندی‌ها حذف شد');
+        }
+
+        function applyNativeTrackList(nativeList, silent = false) {
+            if (typeof nativeList === 'string') {
+                try { nativeList = JSON.parse(nativeList); } catch (_) { return false; }
+            }
+            if (!Array.isArray(nativeList) || !nativeList.length) return false;
+            tracks.length = 0;
+            nativeList.forEach((item, idx) => {
+                tracks.push({
+                    id: item.id,
+                    title: item.title,
+                    artist: item.artist,
+                    duration: item.duration || 180,
+                    favorite: false,
+                    colors: [item.c1 || '#00f0ff', item.c2 || '#b537f2'],
+                    audioUrl: null,
+                    artThumbUrl: item.artThumbUrl || null,
+                    artFullUrl: item.artFullUrl || null,
+                    isNative: true,
+                    nativeIndex: idx
+                });
+            });
+            currentIndex = 0;
+            currentTimeSec = 0;
+            const countLabel = document.getElementById('song-count-label');
+            if (countLabel) countLabel.textContent = `${tracks.length} آهنگ`;
+            renderTrackList();
+            updateTrackUI();
+            if (!silent) showToast(`${tracks.length} آهنگ از حافظه گوشی بارگذاری شد`);
+            return true;
+        }
+
+        window.onNativeTracksLoaded = function(nativeList) {
+            applyNativeTrackList(nativeList, false);
+        };
+
+        function pullNativeTracksFromBridge() {
+            if (!isNativeAndroid) return;
+            try {
+                if (typeof window.AndroidBridge.getTracksJson === 'function') {
+                    const raw = window.AndroidBridge.getTracksJson();
+                    if (raw && raw !== '[]') {
+                        const loaded = applyNativeTrackList(raw, false);
+                        if (loaded) return;
+                    }
+                }
+                if (typeof window.AndroidBridge.requestRescan === 'function') {
+                    window.AndroidBridge.requestRescan();
+                }
+            } catch (_) {}
+        }
+
+        window.onNativeColorsReady = function(colorMap) {
+            if (!colorMap || typeof colorMap !== 'object') return;
+            tracks.forEach((t, i) => {
+                const pair = colorMap[String(t.id)];
+                if (pair && pair.length === 2) {
+                    t.colors = pair;
+                    if (i === currentIndex) {
+                        applyTrackColors(pair[0], pair[1]);
+                        if (activeCardEl) activeCardEl.style.setProperty('--card-c1', pair[0]);
+                    }
+                }
+            });
+        };
+
+        window.onNativeSync = function(nativeIdx, playing, posSec, durSec) {
+            if (isSeeking) return;
+            const foundIdx = tracks.findIndex(t => t.isNative && t.nativeIndex === nativeIdx);
+            if (foundIdx >= 0 && foundIdx !== currentIndex) {
+                const dir = foundIdx > currentIndex ? 1 : -1;
+                currentIndex = foundIdx;
+                updateActiveCardUI(foundIdx, false);
+                updateTrackUI();
+                animateCoverSlide(dir);
+            }
+            if (durSec > 0 && tracks[currentIndex]) {
+                tracks[currentIndex].duration = Math.floor(durSec);
+                seekSlider.max = tracks[currentIndex].duration;
+                document.getElementById('total-duration').textContent = formatTime(tracks[currentIndex].duration);
+            }
+            currentTimeSec = posSec;
+            if (isPlaying !== playing) {
+                isPlaying = playing;
+                updatePlayUI();
+            }
+            syncProgressUI();
+        };
+
+        window.onNativeTrackChanged = function(nativeIdx, durSec) {
+            const foundIdx = tracks.findIndex(t => t.isNative && t.nativeIndex === nativeIdx);
+            if (foundIdx < 0) return;
+            const dir = lastSlideDirection || (foundIdx >= currentIndex ? 1 : -1);
+            lastSlideDirection = 0;
+            currentIndex = foundIdx;
+            currentTimeSec = 0;
+            smoothProgress = 0;
+            if (durSec > 0 && tracks[foundIdx]) {
+                tracks[foundIdx].duration = Math.floor(durSec);
+            }
+            updateActiveCardUI(foundIdx, false);
+            updateTrackUI();
+            animateCoverSlide(dir);
+        };
+
+        function startProgressLoop() {
+            stopProgressLoop();
+            if (isNativeAndroid && tracks[currentIndex]?.isNative) return;
+            progressTimer = setInterval(() => {
+                if (!isPlaying || isSeeking) return;
+                const track = tracks[currentIndex];
+                if (!track) return;
+
+                if (track.audioUrl) {
+                    currentTimeSec = htmlAudio.currentTime || 0;
+                    if (isFinite(htmlAudio.duration) && htmlAudio.duration > 0) {
+                        track.duration = Math.floor(htmlAudio.duration);
+                    }
+                } else {
+                    currentTimeSec += 0.25;
+                    if (currentTimeSec >= track.duration) {
+                        if (isRepeat) {
+                            currentTimeSec = 0;
+                            smoothProgress = 0;
+                        } else {
+                            nextTrack(true);
+                            return;
+                        }
+                    }
+                }
+                syncProgressUI();
+            }, 250);
+        }
+
+        function stopProgressLoop() {
+            if (progressTimer) {
+                clearInterval(progressTimer);
+                progressTimer = null;
+            }
+        }
+
+        function buildTrackCardHtml(track) {
+            const realIdx = tracks.findIndex(t => t.id === track.id);
+            const isCurrent = realIdx === currentIndex;
+            const [c1, c2] = track.colors;
+            const fallbackArt = track.artFullUrl || '';
+            const artHtml = track.artThumbUrl
+                ? `<img src="${track.artThumbUrl}" data-fallback="${fallbackArt}" decoding="async" alt="" class="absolute inset-0 w-full h-full object-cover z-10" onerror="if(this.dataset.fallback && this.src !== this.dataset.fallback){this.src=this.dataset.fallback;this.dataset.fallback='';}else{this.style.display='none';}">`
+                : '';
+
+            return `
+                <div data-index="${realIdx}" style="--card-c1: ${c1};"
+                    class="track-card liquid-glass rounded-[24px] p-3 flex items-center justify-between gap-3 cursor-pointer ${isCurrent ? 'is-active' : ''}">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center relative overflow-hidden shadow-md"
+                            style="background: linear-gradient(135deg, ${c1}, ${c2});">
+                            <svg class="w-6 h-6 text-white drop-shadow" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                            </svg>
+                            ${artHtml}
+                        </div>
+                        <div class="min-w-0 text-right">
+                            <h4 class="track-card-title text-sm font-bold truncate text-white">${track.title}</h4>
+                            <p class="text-[11px] text-white/60 truncate mt-0.5">${track.artist.split('•')[0].trim()}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-[11px] font-medium text-white/50">${formatTime(track.duration)}</span>
+                        <button data-fav-id="${track.id}" aria-label="علاقه‌مندی"
+                            class="fav-heart-wrap w-9 h-9 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24"
+                                fill="${track.favorite ? '#ff2e93' : 'none'}"
+                                stroke="${track.favorite ? '#ff2e93' : 'rgba(255,255,255,0.55)'}"
+                                stroke-width="2">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function animateListViewTransition(dir = 0) {
+            if (!trackListEl || typeof trackListEl.animate !== 'function') return;
+            if (trackListEl._viewAnim) trackListEl._viewAnim.cancel();
+            const shift = dir === 0 ? 0 : (dir > 0 ? -16 : 16);
+            trackListEl._viewAnim = trackListEl.animate(
+                [
+                    { opacity: 0.25, transform: `translate3d(${shift}px, 6px, 0) scale3d(0.985, 0.985, 1)` },
+                    { opacity: 1, transform: 'translate3d(0, 0, 0) scale3d(1, 1, 1)' }
+                ],
+                { duration: 340, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+            );
+        }
+
+        function renderTrackList(animDir = 0) {
+            if (!trackListEl) return;
+            const normQuery = normalizeSearchText(searchQuery);
+
+            if (activeTab === 'artists' && !selectedArtist) {
+                activeCardEl = null;
+                const artistMap = new Map();
+                tracks.forEach((t, idx) => {
+                    const cleanArtist = (t.artist || 'هنرمند ناشناس').split('•')[0].trim();
+                    if (!artistMap.has(cleanArtist)) {
+                        artistMap.set(cleanArtist, {
+                            name: cleanArtist,
+                            songs: [],
+                            colors: t.colors,
+                            artThumbUrl: t.artThumbUrl,
+                            firstIndex: idx
+                        });
+                    }
+                    const entry = artistMap.get(cleanArtist);
+                    entry.songs.push(t);
+                    if (!entry.artThumbUrl && t.artThumbUrl) entry.artThumbUrl = t.artThumbUrl;
+                });
+
+                let artistsArr = Array.from(artistMap.values());
+                if (normQuery) {
+                    artistsArr = artistsArr.filter(a => normalizeSearchText(a.name).includes(normQuery));
+                }
+
+                if (searchCountEl) {
+                    if (normQuery) {
+                        searchCountEl.textContent = `${artistsArr.length} خواننده`;
+                        searchCountEl.classList.remove('hidden');
+                    } else {
+                        searchCountEl.classList.add('hidden');
+                    }
+                }
+
+                if (!artistsArr.length) {
+                    trackListEl.innerHTML = `
+                        <div class="liquid-glass rounded-3xl p-8 text-center text-white/65 text-sm mt-4 space-y-3">
+                            <div>خواننده‌ای با عبارت «<span class="text-cyan-300 font-bold">${searchQuery}</span>» پیدا نشد.</div>
+                            <button type="button" id="empty-search-reset-btn"
+                                class="liquid-glass-btn px-4 py-1.5 rounded-full text-xs font-semibold text-cyan-200">
+                                نمایش همه خواننده‌ها
+                            </button>
+                        </div>
+                    `;
+                    const resetBtn = document.getElementById('empty-search-reset-btn');
+                    if (resetBtn) resetBtn.addEventListener('click', () => setSearchQuery(''));
+                    if (animDir !== 0) animateListViewTransition(animDir);
+                    return;
+                }
+
+                const currentArtistClean = (tracks[currentIndex]?.artist || '').split('•')[0].trim();
+                trackListEl.innerHTML = artistsArr.map((art) => {
+                    const [c1, c2] = art.colors;
+                    const isPlayingArtist = art.name === currentArtistClean;
+                    const artImgHtml = art.artThumbUrl
+                        ? `<img src="${art.artThumbUrl}" loading="lazy" decoding="async" alt="" class="absolute inset-0 w-full h-full object-cover z-10" onerror="this.style.display='none'">`
+                        : '';
+                    return `
+                        <div data-artist-name="${art.name.replace(/"/g, '&quot;')}" style="--card-c1: ${c1};"
+                            class="track-card liquid-glass rounded-[24px] p-3 flex items-center justify-between gap-3 cursor-pointer ${isPlayingArtist ? 'is-active' : ''}">
+                            <div class="flex items-center gap-3 min-w-0 flex-1">
+                                <div class="w-12 h-12 rounded-full shrink-0 flex items-center justify-center relative overflow-hidden shadow-md border border-white/25"
+                                    style="background: linear-gradient(135deg, ${c1}, ${c2});">
+                                    <svg class="w-5 h-5 text-white drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                    ${artImgHtml}
+                                </div>
+                                <div class="min-w-0 text-right">
+                                    <h4 class="track-card-title text-sm font-bold truncate text-white">${art.name}</h4>
+                                    <p class="text-[11px] text-white/60 truncate mt-0.5">${art.songs.length} آهنگ</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button type="button" data-play-artist="${art.name.replace(/"/g, '&quot;')}" aria-label="پخش آهنگ‌های خواننده"
+                                    class="liquid-glass-btn w-8 h-8 rounded-full flex items-center justify-center text-cyan-200">
+                                    <svg class="w-3.5 h-3.5 translate-x-[0.5px]" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </button>
+                                <svg class="w-4 h-4 text-white/45" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M15 18l-6-6 6-6"/>
+                                </svg>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                if (animDir !== 0) animateListViewTransition(animDir);
+                return;
+            }
+
+            let list = activeTab === 'fav'
+                ? tracks.filter(t => t.favorite)
+                : (activeTab === 'artists' && selectedArtist
+                    ? tracks.filter(t => (t.artist || '').split('•')[0].trim() === selectedArtist)
+                    : tracks);
+
+            if (normQuery) {
+                list = list.filter(t =>
+                    normalizeSearchText(t.title).includes(normQuery) ||
+                    normalizeSearchText(t.artist).includes(normQuery)
+                );
+            }
+
+            if (searchCountEl) {
+                if (normQuery) {
+                    searchCountEl.textContent = `${list.length} نتیجه`;
+                    searchCountEl.classList.remove('hidden');
+                } else {
+                    searchCountEl.classList.add('hidden');
+                }
+            }
+
+            const artistHeaderHtml = (activeTab === 'artists' && selectedArtist)
+                ? `
+                    <div class="liquid-glass rounded-2xl px-3.5 py-2 flex items-center justify-between gap-2">
+                        <button type="button" id="back-to-artists-btn"
+                            class="liquid-glass-btn px-3 py-1 rounded-full text-[11px] font-bold text-cyan-200 flex items-center gap-1">
+                            <span>→</span>
+                            <span>همه خواننده‌ها</span>
+                        </button>
+                        <span class="text-xs font-extrabold text-white truncate">${selectedArtist} (${list.length})</span>
+                    </div>
+                `
+                : '';
+
+            if (!list.length) {
+                activeCardEl = null;
+                if (normQuery) {
+                    trackListEl.innerHTML = artistHeaderHtml + `
+                        <div class="liquid-glass rounded-3xl p-8 text-center text-white/65 text-sm mt-4 space-y-3">
+                            <div>آهنگی با عبارت «<span class="text-cyan-300 font-bold">${searchQuery}</span>» پیدا نشد.</div>
+                            <button type="button" id="empty-search-reset-btn"
+                                class="liquid-glass-btn px-4 py-1.5 rounded-full text-xs font-semibold text-cyan-200">
+                                نمایش همه آهنگ‌ها
+                            </button>
+                        </div>
+                    `;
+                    const resetBtn = document.getElementById('empty-search-reset-btn');
+                    if (resetBtn) resetBtn.addEventListener('click', () => setSearchQuery(''));
+                } else {
+                    trackListEl.innerHTML = artistHeaderHtml + `
+                        <div class="liquid-glass rounded-3xl p-8 text-center text-white/60 text-sm mt-4">
+                            هنوز آهنگی در علاقه‌مندی‌ها نیست.<br>
+                            <span class="text-xs text-cyan-300/80 mt-1 inline-block">روی قلب کنار هر آهنگ بزن تا اینجا اضافه شود.</span>
+                        </div>
+                    `;
+                }
+                const backBtn = document.getElementById('back-to-artists-btn');
+                if (backBtn) {
+                    backBtn.addEventListener('click', () => {
+                        selectedArtist = null;
+                        renderTrackList(-1);
+                    });
+                }
+                if (animDir !== 0) animateListViewTransition(animDir);
+                return;
+            }
+
+            trackListEl.innerHTML = artistHeaderHtml + list.map(buildTrackCardHtml).join('');
+            const backBtn = document.getElementById('back-to-artists-btn');
+            if (backBtn) {
+                backBtn.addEventListener('click', () => {
+                    selectedArtist = null;
+                    renderTrackList(-1);
+                });
+            }
+            activeCardEl = trackListEl.querySelector(`.track-card[data-index="${currentIndex}"]`);
+            if (animDir !== 0) animateListViewTransition(animDir);
+        }
+
+        function releasePressedCard() {
+            if (!pressedCardEl) return;
+            const c = pressedCardEl;
+            pressedCardEl = null;
+            c.style.transition = 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)';
+            c.style.transform = 'scale3d(1, 1, 1)';
+            setTimeout(() => {
+                if (pressedCardEl !== c) {
+                    c.style.transition = '';
+                    c.style.transform = '';
+                }
+            }, 230);
+        }
+
+        trackListEl.addEventListener('pointerdown', (e) => {
+            if (e.target.closest('[data-fav-id]') || e.target.closest('[data-play-artist]')) return;
+            const card = e.target.closest('.track-card');
+            if (!card) return;
+            pressedCardEl = card;
+            if (card._springAnim) card._springAnim.cancel();
+            card.style.transition = 'transform 110ms cubic-bezier(0.2, 0, 0, 1)';
+            card.style.transform = 'scale3d(0.935, 0.935, 1)';
+        }, { passive: true });
+
+        trackListEl.addEventListener('pointercancel', releasePressedCard, { passive: true });
+        trackListEl.addEventListener('pointerleave', releasePressedCard, { passive: true });
+
+        trackListEl.addEventListener('click', (e) => {
+            const playArtistBtn = e.target.closest('[data-play-artist]');
+            if (playArtistBtn) {
+                e.stopPropagation();
+                releasePressedCard();
+                const artistName = playArtistBtn.getAttribute('data-play-artist');
+                const firstSongIdx = tracks.findIndex(t => (t.artist || '').split('•')[0].trim() === artistName);
+                if (firstSongIdx >= 0) {
+                    selectTrack(firstSongIdx, true, false);
+                    showToast(`پخش آثار ${artistName}`);
+                }
+                return;
+            }
+
+            const favBtn = e.target.closest('[data-fav-id]');
+            if (favBtn) {
+                e.stopPropagation();
+                releasePressedCard();
+                const id = Number(favBtn.getAttribute('data-fav-id'));
+                toggleFavoriteById(id, favBtn);
+                return;
+            }
+
+            const card = e.target.closest('.track-card');
+            if (card) {
+                pressedCardEl = null;
+                const artistName = card.getAttribute('data-artist-name');
+                if (artistName) {
+                    selectedArtist = artistName;
+                    renderTrackList(1);
+                    return;
+                }
+                const idx = parseInt(card.getAttribute('data-index'), 10);
+                if (!isNaN(idx) && tracks[idx]) {
+                    selectTrack(idx, true, true);
+                }
+            }
+        });
+
+        function updateTrackUI() {
+            const track = tracks[currentIndex];
+            if (!track) return;
+            const [c1, c2] = track.colors;
+            applyTrackColors(c1, c2);
+
+            document.getElementById('mini-title').textContent = track.title;
+            document.getElementById('mini-artist').textContent = track.artist.split('•')[0].trim();
+            document.getElementById('full-title').textContent = track.title;
+            document.getElementById('full-artist').textContent = track.artist;
+
+            applyCoverArt(
+                document.getElementById('mini-cover-img'),
+                document.getElementById('mini-cover-icon'),
+                track.artThumbUrl
+            );
+            applyCoverArt(
+                document.getElementById('full-cover-img'),
+                document.getElementById('full-cover-icon'),
+                track.artFullUrl || track.artThumbUrl
+            );
+
+            seekSlider.max = track.duration;
+            document.getElementById('total-duration').textContent = formatTime(track.duration);
+
+            updateHeartSvg(document.getElementById('full-fav-icon'), track.favorite, 'currentColor');
+            syncProgressUI();
+        }
+
+        function syncProgressUI() {
+            const track = tracks[currentIndex];
+            if (!track) return;
+            const ratio = Math.min(1, Math.max(0, currentTimeSec / (track.duration || 1)));
+            seekSlider.value = currentTimeSec;
+            document.getElementById('mini-progress').style.transform = `scaleX(${ratio})`;
+            document.getElementById('current-time').textContent = formatTime(currentTimeSec);
+            if (!isFullPlayerOpen) smoothProgress = ratio;
+        }
+
+        function updatePlayUI() {
+            const miniBtn = document.getElementById('mini-play-btn');
+            const fullBtn = document.getElementById('full-play-btn');
+            const miniPlayerEl = document.getElementById('mini-player');
+            const miniCoverEl = document.getElementById('mini-cover');
+            const coverEq = document.getElementById('cover-eq');
+            const artFrame = document.getElementById('album-art-frame');
+
+            if (isPlaying) {
+                miniBtn.classList.add('is-playing-btn');
+                fullBtn.classList.add('is-playing-btn');
+                if (miniPlayerEl) miniPlayerEl.classList.add('is-playing');
+                if (miniCoverEl) miniCoverEl.classList.add('is-playing');
+                coverEq.classList.add('eq-active');
+                artFrame.classList.add('is-playing');
+            } else {
+                miniBtn.classList.remove('is-playing-btn');
+                fullBtn.classList.remove('is-playing-btn');
+                if (miniPlayerEl) miniPlayerEl.classList.remove('is-playing');
+                if (miniCoverEl) miniCoverEl.classList.remove('is-playing');
+                coverEq.classList.remove('eq-active');
+                artFrame.classList.remove('is-playing');
+            }
+        }
+
+        function selectTrack(index, autoPlay = true, triggerSpring = false, slideDir = 0) {
+            currentIndex = (index + tracks.length) % tracks.length;
+            currentTimeSec = 0;
+            smoothProgress = 0;
+            const track = tracks[currentIndex];
+
+            htmlAudio.pause();
+            stopAmbientSynth();
+
+            updateActiveCardUI(currentIndex, triggerSpring);
+            updateTrackUI();
+            if (slideDir !== 0) animateCoverSlide(slideDir);
+
+            if (isNativeAndroid && track.isNative && track.nativeIndex >= 0) {
+                isPlaying = true;
+                updatePlayUI();
+                window.AndroidBridge.selectAndPlay(track.nativeIndex);
+                return;
+            }
+
+            if (track.audioUrl) {
+                htmlAudio.src = track.audioUrl;
+                htmlAudio.currentTime = 0;
+            } else {
+                htmlAudio.removeAttribute('src');
+            }
+
+            if (isFullPlayerOpen) drawWaveProgress();
+
+            if (autoPlay) playCurrent();
+            else {
+                isPlaying = false;
+                updatePlayUI();
+            }
+        }
+
+        function playCurrent() {
+            const track = tracks[currentIndex];
+            if (!track) return;
+            if (isNativeAndroid && track.isNative) {
+                window.AndroidBridge.togglePlay();
+                return;
+            }
+            isPlaying = true;
+            updatePlayUI();
+            if (track.audioUrl) htmlAudio.play().catch(() => {});
+            else startAmbientSynth(track);
+            startProgressLoop();
+        }
+
+        function pauseCurrent() {
+            if (isNativeAndroid && tracks[currentIndex]?.isNative) {
+                window.AndroidBridge.togglePlay();
+                return;
+            }
+            isPlaying = false;
+            updatePlayUI();
+            htmlAudio.pause();
+            stopAmbientSynth();
+            stopProgressLoop();
+        }
+
+        function togglePlay() {
+            triggerPlayFeedback();
+            if (isNativeAndroid && tracks[currentIndex]?.isNative) {
+                window.AndroidBridge.togglePlay();
+                return;
+            }
+            if (isPlaying) pauseCurrent();
+            else playCurrent();
+        }
+
+        function nextTrack(fromAutoEnd = false) {
+            if (!fromAutoEnd) triggerNextFeedback();
+            if (isNativeAndroid && tracks[currentIndex]?.isNative) {
+                window.AndroidBridge.next();
+                return;
+            }
+            if (isShuffle && tracks.length > 1) {
+                let nextIdx = currentIndex;
+                while (nextIdx === currentIndex) nextIdx = Math.floor(Math.random() * tracks.length);
+                selectTrack(nextIdx, isPlaying || fromAutoEnd, false, 1);
+            } else {
+                selectTrack(currentIndex + 1, isPlaying || fromAutoEnd, false, 1);
+            }
+        }
+
+        function prevTrack() {
+            triggerPrevFeedback();
+            if (isNativeAndroid && tracks[currentIndex]?.isNative) {
+                window.AndroidBridge.previous();
+                return;
+            }
+            if (currentTimeSec > 3) {
+                currentTimeSec = 0;
+                smoothProgress = 0;
+                if (tracks[currentIndex]?.audioUrl) htmlAudio.currentTime = 0;
+                syncProgressUI();
+                if (isFullPlayerOpen) drawWaveProgress();
+            } else {
+                selectTrack(currentIndex - 1, isPlaying, false, -1);
+            }
+        }
+
+        function openFullPlayer() {
+            isFullPlayerOpen = true;
+            fullPlayer.style.transition = '';
+            fullPlayer.style.transform = '';
+            fullPlayer.style.opacity = '';
+            homeLayer.style.transition = '';
+            homeLayer.style.transform = '';
+            homeLayer.style.opacity = '';
+            homeBgLayer.classList.add('is-receded');
+
+            const track = tracks[currentIndex] || tracks[0];
+            smoothProgress = Math.min(1, Math.max(0, currentTimeSec / ((track && track.duration) || 1)));
+            resizeWaveCanvas();
+
+            requestAnimationFrame(() => {
+                homeLayer.classList.add('is-receded');
+                miniPlayerWrap.classList.add('is-hidden');
+                fullPlayer.classList.add('is-open');
+                lastWaveTimestamp = 0;
+                if (!waveAnimId) waveAnimId = requestAnimationFrame(waveTick);
+            });
+        }
+
+        function closeFullPlayer() {
+            isFullPlayerOpen = false;
+            if (waveAnimId) {
+                cancelAnimationFrame(waveAnimId);
+                waveAnimId = null;
+            }
+            fullPlayer.style.transition = '';
+            fullPlayer.style.transform = '';
+            fullPlayer.style.opacity = '';
+            homeLayer.style.transition = '';
+            homeLayer.style.transform = '';
+            homeLayer.style.opacity = '';
+            homeBgLayer.classList.remove('is-receded');
+
+            fullPlayer.classList.remove('is-open');
+            homeLayer.classList.remove('is-receded');
+            miniPlayerWrap.classList.remove('is-hidden');
+        }
+
+        let sheetStartY = 0;
+        let sheetDeltaY = 0;
+        let isDraggingSheet = false;
+
+        fullPlayer.addEventListener('touchstart', (e) => {
+            if (e.target.closest('#seek-slider') || e.target.closest('button')) return;
+            sheetStartY = e.touches[0].clientY;
+            sheetDeltaY = 0;
+            isDraggingSheet = true;
+            fullPlayer.style.transition = 'none';
+            homeLayer.style.transition = 'none';
+        }, { passive: true });
+
+        fullPlayer.addEventListener('touchmove', (e) => {
+            if (!isDraggingSheet) return;
+            sheetDeltaY = Math.max(0, e.touches[0].clientY - sheetStartY);
+            if (sheetDeltaY > 0) {
+                const progress = Math.min(1, sheetDeltaY / 380);
+                fullPlayer.style.transform = `translate3d(0, ${sheetDeltaY}px, 0)`;
+                fullPlayer.style.opacity = `${1 - progress * 0.25}`;
+                homeLayer.style.transform = `scale3d(${0.94 + progress * 0.06}, ${0.94 + progress * 0.06}, 1) translate3d(0, ${8 * (1 - progress)}px, 0)`;
+                homeLayer.style.opacity = `${0.42 + progress * 0.58}`;
+            }
+        }, { passive: true });
+
+        fullPlayer.addEventListener('touchend', () => {
+            if (!isDraggingSheet) return;
+            isDraggingSheet = false;
+            if (sheetDeltaY > 115) closeFullPlayer();
+            else {
+                fullPlayer.style.transition = '';
+                fullPlayer.style.transform = '';
+                fullPlayer.style.opacity = '';
+                homeLayer.style.transition = '';
+                homeLayer.style.transform = '';
+                homeLayer.style.opacity = '';
+            }
+        });
+
+        function resizeWaveCanvas() {
+            if (!waveCanvas || !waveCtx) return;
+            const rect = waveCanvas.getBoundingClientRect();
+            if (!rect.width || !rect.height) return;
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            cachedWaveWidth = rect.width;
+            cachedWaveHeight = rect.height;
+            waveCanvas.width = Math.round(rect.width * dpr);
+            waveCanvas.height = Math.round(rect.height * dpr);
+            waveCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            drawWaveProgress();
+        }
+
+        function drawWaveProgress() {
+            if (!cachedWaveWidth || !cachedWaveHeight || !waveCtx) return;
+            const w = cachedWaveWidth;
+            const h = cachedWaveHeight;
+            const cy = h * 0.5;
+            const track = tracks[currentIndex] || tracks[0];
+            const [c1, c2] = (track && track.colors) || ['#00f0ff', '#b537f2'];
+            const rawProgress = Math.min(1, Math.max(0, currentTimeSec / ((track && track.duration) || 1)));
+            const progress = isFullPlayerOpen ? smoothProgress : rawProgress;
+
+            const pad = 12;
+            const usableW = Math.max(1, w - pad * 2);
+            const activeEnd = pad + usableW * progress;
+
+            waveCtx.clearRect(0, 0, w, h);
+
+            waveCtx.beginPath();
+            waveCtx.moveTo(pad, cy);
+            waveCtx.lineTo(w - pad, cy);
+            waveCtx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+            waveCtx.lineWidth = 4;
+            waveCtx.lineCap = 'round';
+            waveCtx.stroke();
+
+            const activeLen = activeEnd - pad;
+            const grad = waveCtx.createLinearGradient(pad, 0, Math.max(pad + 1, activeEnd), 0);
+            grad.addColorStop(0, c1);
+            grad.addColorStop(1, c2);
+
+            if (activeLen > 1) {
+                waveCtx.save();
+                waveCtx.beginPath();
+                waveCtx.moveTo(pad, cy);
+                waveCtx.lineTo(activeEnd, cy);
+                waveCtx.strokeStyle = grad;
+                waveCtx.globalAlpha = 0.25 + waveEnergy * 0.15;
+                waveCtx.lineWidth = 10 + waveEnergy * 3;
+                waveCtx.lineCap = 'round';
+                waveCtx.stroke();
+                waveCtx.restore();
+
+                if (activeLen > 14) {
+                    const maxAmp = Math.min(12, activeLen * 0.14) * waveEnergy;
+                    const step = 3;
+
+                    waveCtx.beginPath();
+                    waveCtx.moveTo(pad, cy);
+                    for (let x = pad; x <= activeEnd; x += step) {
+                        const t = (x - pad) / activeLen;
+                        const env = Math.pow(Math.sin(t * Math.PI), 1.35);
+                        const yOffset = (
+                            Math.sin(x * 0.055 - wavePhase * 1.1) * 0.65 +
+                            Math.sin(x * 0.092 + wavePhase * 0.8) * 0.35
+                        ) * maxAmp * env;
+                        waveCtx.lineTo(x, cy - Math.abs(yOffset) * 1.05);
+                    }
+                    waveCtx.lineTo(activeEnd, cy);
+                    waveCtx.closePath();
+
+                    const fillGrad = waveCtx.createLinearGradient(0, cy - maxAmp - 2, 0, cy + 2);
+                    fillGrad.addColorStop(0, c1);
+                    fillGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    waveCtx.save();
+                    waveCtx.globalAlpha = 0.22 * waveEnergy;
+                    waveCtx.fillStyle = fillGrad;
+                    waveCtx.fill();
+                    waveCtx.restore();
+
+                    const strands = [
+                        { freq1: 0.052, freq2: 0.088, speed1: 1.2, speed2: -0.7, ampMul: 1.0, width: 1.8, alpha: 0.88, color: grad },
+                        { freq1: 0.068, freq2: 0.041, speed1: -0.9, speed2: 1.3, ampMul: 0.78, width: 1.35, alpha: 0.58, color: '#ffffff' },
+                        { freq1: 0.044, freq2: 0.105, speed1: 1.5, speed2: 0.55, ampMul: 0.62, width: 1.2, alpha: 0.48, color: grad }
+                    ];
+
+                    strands.forEach((s) => {
+                        waveCtx.beginPath();
+                        for (let x = pad; x <= activeEnd; x += step) {
+                            const t = (x - pad) / activeLen;
+                            const env = Math.pow(Math.sin(t * Math.PI), 1.4);
+                            const y = cy + (
+                                Math.sin(x * s.freq1 - wavePhase * s.speed1) * 0.68 +
+                                Math.cos(x * s.freq2 + wavePhase * s.speed2) * 0.32
+                            ) * maxAmp * s.ampMul * env;
+                            if (x === pad) waveCtx.moveTo(x, y);
+                            else waveCtx.lineTo(x, y);
+                        }
+                        waveCtx.save();
+                        waveCtx.strokeStyle = s.color;
+                        waveCtx.globalAlpha = s.alpha * Math.min(1, waveEnergy + 0.22);
+                        waveCtx.lineWidth = s.width;
+                        waveCtx.lineCap = 'round';
+                        waveCtx.stroke();
+                        waveCtx.restore();
+                    });
+
+                    if (waveEnergy > 0.25 && activeLen > 36) {
+                        const sparkCount = 6;
+                        for (let i = 0; i < sparkCount; i++) {
+                            const life = (wavePhase * 0.26 + i / sparkCount) % 1;
+                            const sx = pad + activeLen * (0.1 + 0.8 * ((i * 0.37 + wavePhase * 0.035) % 1));
+                            const dir = i % 2 === 0 ? -1 : 1;
+                            const sy = cy + dir * (3 + life * (maxAmp * 1.15));
+                            const alpha = Math.sin(life * Math.PI) * 0.72 * waveEnergy;
+                            const radius = 1.1 + Math.sin(life * Math.PI) * 1.05;
+
+                            waveCtx.save();
+                            waveCtx.beginPath();
+                            waveCtx.arc(sx, sy, radius, 0, Math.PI * 2);
+                            waveCtx.fillStyle = i % 2 === 0 ? '#ffffff' : c1;
+                            waveCtx.globalAlpha = alpha;
+                            waveCtx.fill();
+                            waveCtx.restore();
+                        }
+                    }
+                }
+
+                waveCtx.beginPath();
+                waveCtx.moveTo(pad, cy);
+                waveCtx.lineTo(activeEnd, cy);
+                waveCtx.strokeStyle = grad;
+                waveCtx.lineWidth = 4;
+                waveCtx.lineCap = 'round';
+                waveCtx.stroke();
+
+                if (activeLen > 24 && waveEnergy > 0.2) {
+                    const pulsePos = pad + ((wavePhase * 0.3) % 1) * activeLen;
+                    const pulseW = Math.min(48, activeLen * 0.45);
+                    const pulseGrad = waveCtx.createLinearGradient(pulsePos - pulseW, cy, pulsePos + pulseW * 0.3, cy);
+                    pulseGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+                    pulseGrad.addColorStop(0.75, 'rgba(255, 255, 255, 0.85)');
+                    pulseGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+                    waveCtx.save();
+                    waveCtx.beginPath();
+                    waveCtx.moveTo(Math.max(pad, pulsePos - pulseW), cy);
+                    waveCtx.lineTo(Math.min(activeEnd, pulsePos + pulseW * 0.3), cy);
+                    waveCtx.strokeStyle = pulseGrad;
+                    waveCtx.globalAlpha = 0.8 * waveEnergy;
+                    waveCtx.lineWidth = 2.5;
+                    waveCtx.lineCap = 'round';
+                    waveCtx.stroke();
+                    waveCtx.restore();
+                }
+            }
+
+            const auraRadius = isSeeking ? 18 : (12 + Math.sin(wavePhase * 2.1) * 2.2 * waveEnergy);
+            const auraGrad = waveCtx.createRadialGradient(activeEnd, cy, 3, activeEnd, cy, auraRadius);
+            auraGrad.addColorStop(0, c2);
+            auraGrad.addColorStop(0.55, c1);
+            auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+            waveCtx.save();
+            waveCtx.globalAlpha = isSeeking ? 0.72 : (0.38 + waveEnergy * 0.2);
+            waveCtx.fillStyle = auraGrad;
+            waveCtx.beginPath();
+            waveCtx.arc(activeEnd, cy, auraRadius, 0, Math.PI * 2);
+            waveCtx.fill();
+            waveCtx.restore();
+
+            const thumbR = isSeeking ? 9.5 : 8;
+            const thumbGrad = waveCtx.createLinearGradient(activeEnd - thumbR, cy - thumbR, activeEnd + thumbR, cy + thumbR);
+            thumbGrad.addColorStop(0, c1);
+            thumbGrad.addColorStop(1, c2);
+
+            waveCtx.save();
+            waveCtx.beginPath();
+            waveCtx.arc(activeEnd, cy, thumbR, 0, Math.PI * 2);
+            waveCtx.fillStyle = thumbGrad;
+            waveCtx.fill();
+            waveCtx.lineWidth = 2.6;
+            waveCtx.strokeStyle = '#ffffff';
+            waveCtx.stroke();
+            waveCtx.restore();
+        }
+
+        function waveTick(timestamp) {
+            if (!isFullPlayerOpen) {
+                waveAnimId = null;
+                return;
+            }
+            const dt = lastWaveTimestamp ? Math.min(0.05, (timestamp - lastWaveTimestamp) / 1000) : 0.016;
+            lastWaveTimestamp = timestamp;
+
+            const targetEnergy = isSeeking ? 1.2 : (isPlaying ? 1.0 : 0.15);
+            waveEnergy += (targetEnergy - waveEnergy) * Math.min(1, dt * 6);
+            wavePhase += dt * (isPlaying ? 2.1 : 0.42);
+
+            const track = tracks[currentIndex] || tracks[0];
+            const targetProgress = Math.min(1, Math.max(0, currentTimeSec / ((track && track.duration) || 1)));
+            if (isSeeking || Math.abs(targetProgress - smoothProgress) > 0.15) {
+                smoothProgress = targetProgress;
+            } else {
+                smoothProgress += (targetProgress - smoothProgress) * Math.min(1, dt * 14);
+            }
+
+            drawWaveProgress();
+            waveAnimId = requestAnimationFrame(waveTick);
+        }
+
+        document.getElementById('mini-open-trigger').addEventListener('click', openFullPlayer);
+        document.getElementById('close-player-btn').addEventListener('click', closeFullPlayer);
+        document.getElementById('mini-play-btn').addEventListener('click', (e) => { e.stopPropagation(); togglePlay(); });
+        document.getElementById('mini-prev-btn').addEventListener('click', (e) => { e.stopPropagation(); prevTrack(); });
+        document.getElementById('mini-next-btn').addEventListener('click', (e) => { e.stopPropagation(); nextTrack(false); });
+        document.getElementById('full-play-btn').addEventListener('click', togglePlay);
+        document.getElementById('full-prev-btn').addEventListener('click', prevTrack);
+        document.getElementById('full-next-btn').addEventListener('click', () => nextTrack(false));
+
+        document.getElementById('full-fav-btn').addEventListener('click', () => {
+            const track = tracks[currentIndex];
+            if (!track) return;
+            toggleFavoriteById(track.id, null);
+        });
+
+        document.getElementById('shuffle-btn').addEventListener('click', (e) => {
+            isShuffle = !isShuffle;
+            e.currentTarget.classList.toggle('text-cyan-300', isShuffle);
+            e.currentTarget.classList.toggle('text-white/55', !isShuffle);
+            if (isNativeAndroid) window.AndroidBridge.setShuffle(isShuffle);
+            showToast(isShuffle ? 'پخش تصادفی روشن شد' : 'پخش تصادفی خاموش شد');
+        });
+
+        document.getElementById('repeat-btn').addEventListener('click', (e) => {
+            isRepeat = !isRepeat;
+            e.currentTarget.classList.toggle('text-pink-400', isRepeat);
+            e.currentTarget.classList.toggle('text-white/55', !isRepeat);
+            if (isNativeAndroid) window.AndroidBridge.setRepeat(isRepeat);
+            showToast(isRepeat ? 'تکرار آهنگ روشن شد' : 'تکرار آهنگ خاموش شد');
+        });
+
+        const startSeek = () => { isSeeking = true; };
+        const endSeek = () => { isSeeking = false; };
+        seekSlider.addEventListener('pointerdown', startSeek);
+        seekSlider.addEventListener('pointerup', endSeek);
+        seekSlider.addEventListener('pointercancel', endSeek);
+        seekSlider.addEventListener('touchstart', startSeek, { passive: true });
+        seekSlider.addEventListener('touchend', endSeek);
+        seekSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            const track = tracks[currentIndex];
+            currentTimeSec = val;
+            if (isNativeAndroid && track?.isNative) {
+                window.AndroidBridge.seekToSec(val);
+            } else if (track && track.audioUrl) {
+                htmlAudio.currentTime = val;
+            }
+            const ratio = Math.min(1, Math.max(0, currentTimeSec / ((track && track.duration) || 1)));
+            smoothProgress = ratio;
+            document.getElementById('mini-progress').style.transform = `scaleX(${ratio})`;
+            document.getElementById('current-time').textContent = formatTime(currentTimeSec);
+            drawWaveProgress();
+        });
+
+        const tabOrder = ['all', 'fav', 'artists'];
+
+        function setTab(tab) {
+            const prevIdx = tabOrder.indexOf(activeTab);
+            const nextIdx = tabOrder.indexOf(tab);
+            const dir = prevIdx === -1 || nextIdx === -1 ? 0 : nextIdx - prevIdx;
+
+            activeTab = tab;
+            if (tab !== 'artists') selectedArtist = null;
+
+            if (tabGliderEl && nextIdx >= 0) {
+                tabGliderEl.style.transform = `translate3d(${-nextIdx * 100}%, 0, 0)`;
+            }
+            if (tabAllBtn) tabAllBtn.classList.toggle('is-active', tab === 'all');
+            if (tabFavBtn) tabFavBtn.classList.toggle('is-active', tab === 'fav');
+            if (tabArtistsBtn) tabArtistsBtn.classList.toggle('is-active', tab === 'artists');
+
+            renderTrackList(dir);
+        }
+
+        if (tabAllBtn) tabAllBtn.addEventListener('click', () => setTab('all'));
+        if (tabFavBtn) tabFavBtn.addEventListener('click', () => setTab('fav'));
+        if (tabArtistsBtn) tabArtistsBtn.addEventListener('click', () => setTab('artists'));
+
+        if (searchInputEl) {
+            searchInputEl.addEventListener('input', (e) => setSearchQuery(e.target.value));
+            searchInputEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && searchQuery) {
+                    e.stopPropagation();
+                    setSearchQuery('');
+                }
+            });
+        }
+        if (searchClearBtn) {
+            searchClearBtn.addEventListener('click', () => {
+                setSearchQuery('');
+                if (searchInputEl) searchInputEl.focus();
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '/' && document.activeElement !== searchInputEl && !isFullPlayerOpen && !isSettingsOpen) {
+                e.preventDefault();
+                if (searchInputEl) searchInputEl.focus();
+            } else if (e.key === 'Escape' && isSettingsOpen) {
+                closeSettingsSheet();
+            }
+        });
+
+        const themeCycleBtn = document.getElementById('theme-cycle-btn');
+        if (themeCycleBtn) {
+            themeCycleBtn.addEventListener('click', () => {
+                spinHeaderIcon(themeCycleBtn, 180);
+                themeIndex = (themeIndex + 1) % neonThemes.length;
+                const t = neonThemes[themeIndex];
+                document.documentElement.style.setProperty('--neon-1', t.n1);
+                document.documentElement.style.setProperty('--neon-2', t.n2);
+                document.documentElement.style.setProperty('--neon-3', t.n3);
+                if (tabGliderEl) {
+                    tabGliderEl.style.background = `linear-gradient(135deg, ${t.n1}, ${t.n2})`;
+                }
+                showToast(`طیف نئون: ${t.name}`, themeCycleBtn);
+            });
+        }
+
+        const audioFileInput = document.getElementById('audio-file-input');
+        if (audioFileInput) {
+            audioFileInput.addEventListener('click', () => { audioFileInput.value = ''; });
+            audioFileInput.addEventListener('change', async (e) => {
+                const files = Array.from(e.target.files || []);
+                if (!files.length) return;
+                const palette = [['#00f0ff', '#b537f2'], ['#ff2e93', '#ff8a00'], ['#00ff9d', '#00c3ff'], ['#ffe600', '#ff006e']];
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const url = URL.createObjectURL(file);
+                    const cleanName = file.name.replace(/\.[^/.]+$/, '');
+                    const extractedArtUrl = await extractLocalAudioArtwork(file);
+                    tracks.unshift({
+                        id: Date.now() + i,
+                        title: cleanName,
+                        artist: 'فایل محلی • Local Audio',
+                        duration: 180,
+                        favorite: false,
+                        colors: palette[(tracks.length + i) % palette.length],
+                        audioUrl: url,
+                        artThumbUrl: extractedArtUrl,
+                        artFullUrl: extractedArtUrl,
+                        isNative: false,
+                        nativeIndex: -1
+                    });
+                }
+                if (searchQuery) setSearchQuery('');
+                else renderTrackList();
+                selectTrack(0, true, true);
+                showToast(`${files.length} آهنگ واقعی اضافه شد`);
+            });
+        }
+
+        function initApp() {
+            try { initNeonStatusBar(); } catch (_) {}
+            try { initGlassAppearance(); } catch (_) {}
+            try { initHomeWallpaper(); } catch (_) {}
+            try { initWeatherEngine(); } catch (_) {}
+            renderTrackList();
+            updateTrackUI();
+            updatePlayUI();
+            resizeWaveCanvas();
+            pullNativeTracksFromBridge();
+            setTimeout(pullNativeTracksFromBridge, 900);
+            setTimeout(pullNativeTracksFromBridge, 2400);
+        }
+
+        window.addEventListener('resize', () => {
+            resizeWaveCanvas();
+            resizeWeatherCanvas();
+        });
+        if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', initApp);
+        else initApp();
+    </script>
+</body>
+</html>
